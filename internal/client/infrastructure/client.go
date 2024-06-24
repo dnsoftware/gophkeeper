@@ -1,4 +1,4 @@
-package domain
+package infrastructure
 
 import (
 	"bytes"
@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/dnsoftware/gophkeeper/internal/client/infrastructure"
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 	"github.com/dnsoftware/gophkeeper/internal/utils"
@@ -76,11 +75,11 @@ func NewKeeperClient(serverAddress string, secretKey string, creds credentials.T
 
 	// перехватчики
 	excludeMethods := map[string]bool{}
-	authInterceptor := infrastructure.NewAuthInterceptor(kc, excludeMethods)
+	authInterceptor := NewAuthInterceptor(kc, excludeMethods)
 
 	// методы, данные в которых надо шифровать
 	validOutCryptMethods := map[string]bool{constants.MethodAddEntity: true, constants.MethodEntity: true}
-	dataOutInterceptor := infrastructure.NewDataOutInterceptor(kc, secretKey, validOutCryptMethods)
+	dataOutInterceptor := NewDataOutInterceptor(kc, secretKey, validOutCryptMethods)
 
 	opts = append(opts,
 		grpc.WithTransportCredentials(creds),
@@ -189,7 +188,8 @@ func (t *KeeperClient) Fields(ctx context.Context, etype string) ([]*Field, erro
 	return fd, nil
 }
 
-func (t *KeeperClient) AddEntity(ctx context.Context, ae AddEntity, opts ...grpc.CallOption) (int32, error) {
+func (t *KeeperClient) AddEntity(ctx context.Context, ae AddEntity) (int32, error) {
+	var opts []grpc.CallOption
 
 	var props = make([]*pb.Property, 0, len(ae.Props))
 	for _, val := range ae.Props {

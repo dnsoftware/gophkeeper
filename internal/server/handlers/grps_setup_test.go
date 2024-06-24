@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	configclient "github.com/dnsoftware/gophkeeper/internal/client/config"
-	domainclient "github.com/dnsoftware/gophkeeper/internal/client/domain"
+	domainclient "github.com/dnsoftware/gophkeeper/internal/client/infrastructure"
 	"github.com/dnsoftware/gophkeeper/internal/server/config"
 	"github.com/dnsoftware/gophkeeper/internal/server/domain/entity"
 	"github.com/dnsoftware/gophkeeper/internal/server/domain/entity_code"
