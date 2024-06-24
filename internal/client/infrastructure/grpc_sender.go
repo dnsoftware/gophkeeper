@@ -22,21 +22,15 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
-//type ClientSender interface {
-//	Registration(login string, password string, password2 string) (string, error)
-//}
-
 type GRPCSender struct {
-	//cfg *config.ClientConfig
 	pb.KeeperClient
-	//sender    ClientSender
 	token     string
 	password  string
 	secretKey string
 }
 
-// NewKeeperClient
-func NewKeeperClient(serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*GRPCSender, *grpc.ClientConn, error) {
+// NewGRPCSender обмен данными с сервером
+func NewGRPCSender(serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*GRPCSender, *grpc.ClientConn, error) {
 
 	kc := &GRPCSender{
 		secretKey: secretKey,

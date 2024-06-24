@@ -47,3 +47,17 @@ type Field struct {
 	ValidateRules    string
 	ValidateMessages string
 }
+
+type GophKeepClient struct {
+	Sender *Sender
+}
+
+func NewGophKeepClient(sender *Sender) (*GophKeepClient, error) {
+
+	client := &GophKeepClient{
+		Sender: sender,
+	}
+
+	return client, nil
+
+}
