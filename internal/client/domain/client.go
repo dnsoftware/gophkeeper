@@ -67,11 +67,7 @@ type Field struct {
 	ValidateMessages string
 }
 
-//func NewClient() (*KeeperClient, *grpc.ClientConn, error) {
-//
-//}
-
-// NewKeeperClient deprecated TODO удалить
+// NewKeeperClient
 func NewKeeperClient(serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*KeeperClient, *grpc.ClientConn, error) {
 
 	kc := &KeeperClient{
