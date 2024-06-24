@@ -1,0 +1,35 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Binaries
+cmd/client/main
+cmd/client/clientkeeper
+cmd/server/main
+cmd/server/serverkeeper
+cmd/staticlint/staticlint
+*staticlint
+!staticlint/
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# IDEs directories
+.idea
+.vscode
+*.log
+
+.run
+coverage.html
+
+cmd/server/migrations/migrate
+cmd/client/filestorage/*

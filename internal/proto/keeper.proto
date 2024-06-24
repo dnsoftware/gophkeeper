@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "internal/proto";
+
+// пинг сервера
+message PingRequest {
+  string message = 1;           // ping
+}
+
+// ответ на пинг сервера
+message PingResponse {
+  string message = 1;           // pong
+}
+
+/******************* регистрация и вход *********************/
+
+// Запрос на регистрацию нового пользователя
+message RegisterRequest {
+  string login = 1;           // логин
+  string password = 2;        // пароль
+  string repeat_password = 3; // пароль еще раз
+}
+
+// Ответ на регистрацию нового пользователя
+message RegisterResponse {
+  string token = 1;     // токен доступа при успешной регистрации
+  string error = 2;     // пустая строка, если прошло успешно и описание ошибки, если возникла ошибка
+}
+
+// Логин пользователя
+message LoginRequest {
+  string login = 1;           // логин
+  string password = 2;        // пароль
+}
+
+// Ответ на логин пользователя
+message LoginResponse {
+  string token = 1;     // токен доступа при успешной регистрации
+  string error = 2;     // пустая строка, если прошло успешно и описание ошибки, если возникла ошибка
+}
+
+/******************** справочник сущностей ********************/
+
+// объект "код сущности-название"
+message EntityCode {
+  string etype = 1; // тип сущности: card, text, logopas, binary
+  string name = 2;  // название сущности
+}
+
+// Запрос списка доступных к добавлению типов сущностей (таблица entity_codes)
+message EntityCodesRequest {
+  string token = 1; // токен доступа
+}
+
+// Ответ на запрос списка доступных к добавлению типов сущностей (таблица entity_codes)
+message EntityCodesResponse {
+  repeated EntityCode entity_codes = 1;
+}
+
+/****************************** описание полей свойств сущности ******************************/
+
+// объект "Поле сущности"
+message Field {
+  int32 id = 1;                 // код поля
+  string name = 3;              // наименование поля
+  string ftype = 4;             // тип поля (string, path и т.п.)
+  string validate_rules = 5;    // правила валидации
+  string validate_messages = 6; // сообщения валидации (при непрохождении оной)
+}
+
+// Запрос списка характеристик полей сущности
+message FieldsRequest {
+  string etype = 1; // тип сущности: card, text, logopas, binary и т.д.
+}
+
+// Ответ на запрос списка характеристик полей сущности
+message FieldsResponse {
+  repeated Field fields = 1;
+}
+
+/********************************* сущность (банковская карта, логин/пароль, текст, бинарные данные) **********************************/
+
+// Значение свойства сущности
+message Property {
+  int32 entityId = 1; // код сущности
+  int32 fieldId = 2;  // код описания поля свйоства
+  string value = 3;   // значение свойства
+}
+
+// Метаинформация сущности
+message Metainfo {
+  int32 entityId = 1; // код сущности
+  string title = 2;   // наименование метаинформации
+  string value = 3;   // значение метаинформации
+}
+
+// Запрос на добавление новой сущности
+message AddEntityRequest {
+  int32 id = 1;                   // ID сущности
+  string etype = 2;               // тип сущности: card, text, logopas, binary и т.д.
+  repeated Property props = 3;    // массив значений свойств
+  repeated Metainfo metainfo = 4; // массив значений метаинформации
+}
+
+// Ответ на запрос на добавление новой сущности
+message AddEntityResponse {
+  int32 id = 1;                   // ID добавленной сущности
+  string error = 2;               // если возникла ошибка - описание ошибки, иначе - пустая строка
+}
+
+// Загрузка бинарных данных на сервер (вызывается сразу после AddEntityResponse)
+message UploadBinRequest {
+  int32 entity_id = 1;       // код сущности для которого будут загружаться бинарные данные
+  bytes chunk_data = 2;    // chunk
+}
+
+// Ответ на загрузку бинарных данных на сервер
+message UploadBinResponse {
+  int32 size = 1;        // размер загруженных данных
+  string error = 2;               // если возникла ошибка - описание ошибки, иначе - пустая строка
+}
+
+// Получение сущности с сервера
+message EntityRequest {
+  int32 id = 1;     // Идентификатор сущности
+}
+
+// Ответ на получение сущности с сервера
+message EntityResponse {
+  int32 id = 1;                   // ID сущности
+  string etype = 2;               // тип сущности: card, text, logopas, binary и т.д.
+  repeated Property props = 3;    // массив значений свойств
+  repeated Metainfo metainfo = 4; // массив значений метаинформации
+  string error = 5;               // если возникла ошибка - описание ошибки, иначе - пустая строка
+}
+
+// Загрузка бинарных данных с сервера
+message DownloadBinRequest {
+  int32 entity_id = 1;       // код сущности для которого будут загружаться бинарные данные
+}
+
+message DownloadBinResponse {
+  bytes chunk_data = 1;    // chunk
+}
+
+/****************************************************/
+
+service Keeper {
+  rpc Ping(PingRequest) returns (PingResponse);
+
+  rpc Registration(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  rpc EntityCodes(EntityCodesRequest) returns (EntityCodesResponse);
+  rpc Fields(FieldsRequest) returns (FieldsResponse);
+
+  rpc AddEntity(AddEntityRequest) returns (AddEntityResponse);
+  rpc UploadBinary(stream UploadBinRequest) returns (UploadBinResponse);
+  rpc UploadCryptoBinary(stream UploadBinRequest) returns (UploadBinResponse);
+
+  rpc Entity(EntityRequest) returns (EntityResponse);
+  rpc DownloadBinary(DownloadBinRequest) returns (stream DownloadBinResponse);
+  rpc DownloadCryptoBinary(DownloadBinRequest) returns (stream DownloadBinResponse);
+
+}
