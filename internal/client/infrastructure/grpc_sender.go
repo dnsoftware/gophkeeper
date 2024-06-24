@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/dnsoftware/gophkeeper/internal/client/domain"
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 	"github.com/dnsoftware/gophkeeper/internal/utils"
@@ -32,38 +33,6 @@ type GRPCSender struct {
 	token     string
 	password  string
 	secretKey string
-}
-
-type AddEntity struct {
-	Id       int32       // ID сущности
-	Etype    string      // тип сущности: card, text, logopas, binary и т.д.
-	Props    []*Property // массив значений свойств
-	Metainfo []*Metainfo // массив значений метаинформации
-}
-
-type Property struct {
-	EntityId int32  // код сущности
-	FieldId  int32  // код описания поля свйоства
-	Value    string // значение свойства
-}
-
-type Metainfo struct {
-	EntityId int32  // код сущности
-	Title    string // наименование метаинформации
-	Value    string // значение метаинформации
-}
-
-type EntityCode struct {
-	Etype string
-	Name  string
-}
-
-type Field struct {
-	Id               int32
-	Name             string
-	Ftype            string
-	ValidateRules    string
-	ValidateMessages string
 }
 
 // NewKeeperClient
@@ -143,7 +112,7 @@ func (t *GRPCSender) Login(ctx context.Context, login string, password string) (
 	return lr.Token, err
 }
 
-func (t *GRPCSender) EntityCodes(ctx context.Context) ([]*EntityCode, error) {
+func (t *GRPCSender) EntityCodes(ctx context.Context) ([]*domain.EntityCode, error) {
 	var opts []grpc.CallOption
 
 	in := &pb.EntityCodesRequest{Token: t.token}
@@ -153,9 +122,9 @@ func (t *GRPCSender) EntityCodes(ctx context.Context) ([]*EntityCode, error) {
 		return nil, err
 	}
 
-	var entcodes = make([]*EntityCode, 0, len(ec.EntityCodes))
+	var entcodes = make([]*domain.EntityCode, 0, len(ec.EntityCodes))
 	for _, val := range ec.EntityCodes {
-		entcodes = append(entcodes, &EntityCode{
+		entcodes = append(entcodes, &domain.EntityCode{
 			Etype: val.Etype,
 			Name:  val.Name,
 		})
@@ -164,7 +133,7 @@ func (t *GRPCSender) EntityCodes(ctx context.Context) ([]*EntityCode, error) {
 	return entcodes, nil
 }
 
-func (t *GRPCSender) Fields(ctx context.Context, etype string) ([]*Field, error) {
+func (t *GRPCSender) Fields(ctx context.Context, etype string) ([]*domain.Field, error) {
 	var opts []grpc.CallOption
 
 	in := &pb.FieldsRequest{Etype: etype}
@@ -174,9 +143,9 @@ func (t *GRPCSender) Fields(ctx context.Context, etype string) ([]*Field, error)
 		return nil, err
 	}
 
-	var fd = make([]*Field, 0, len(resp.Fields))
+	var fd = make([]*domain.Field, 0, len(resp.Fields))
 	for _, val := range resp.Fields {
-		fd = append(fd, &Field{
+		fd = append(fd, &domain.Field{
 			Id:               val.Id,
 			Name:             val.Name,
 			Ftype:            val.Ftype,
@@ -188,7 +157,7 @@ func (t *GRPCSender) Fields(ctx context.Context, etype string) ([]*Field, error)
 	return fd, nil
 }
 
-func (t *GRPCSender) AddEntity(ctx context.Context, ae AddEntity) (int32, error) {
+func (t *GRPCSender) AddEntity(ctx context.Context, ae domain.Entity) (int32, error) {
 	var opts []grpc.CallOption
 
 	var props = make([]*pb.Property, 0, len(ae.Props))

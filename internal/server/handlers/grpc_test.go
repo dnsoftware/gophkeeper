@@ -16,7 +16,7 @@ import (
 	//"google.golang.org/grpc/test/bufconn"
 
 	configclient "github.com/dnsoftware/gophkeeper/internal/client/config"
-	"github.com/dnsoftware/gophkeeper/internal/client/infrastructure"
+	"github.com/dnsoftware/gophkeeper/internal/client/domain"
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 	"github.com/dnsoftware/gophkeeper/internal/server/config"
@@ -236,34 +236,34 @@ func TestAddEntity(t *testing.T) {
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// добавление банковской карты
-	var props []*infrastructure.Property
-	var metainfo []*infrastructure.Metainfo
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
 
 	props = append(props,
-		&infrastructure.Property{
+		&domain.Property{
 			FieldId: 3,
 			Value:   "1111222233334444",
 		},
-		&infrastructure.Property{
+		&domain.Property{
 			FieldId: 4,
 			Value:   "12/25",
 		},
-		&infrastructure.Property{
+		&domain.Property{
 			FieldId: 5,
 			Value:   "123",
 		})
 
 	metainfo = append(metainfo,
-		&infrastructure.Metainfo{
+		&domain.Metainfo{
 			Title: "Владелец карты",
 			Value: "Василий Пупкин",
 		},
-		&infrastructure.Metainfo{
+		&domain.Metainfo{
 			Title: "Банк",
 			Value: "Суслик Инвест",
 		})
 
-	entreq := infrastructure.AddEntity{
+	entreq := domain.Entity{
 		Id:       0,
 		Etype:    constants.CardEntity,
 		Props:    props,
@@ -295,18 +295,18 @@ func TestAddEntity(t *testing.T) {
 	onlyFilename := filepath.Base(uploadFile)
 
 	props = append(props,
-		&infrastructure.Property{
+		&domain.Property{
 			FieldId: 7,
 			Value:   onlyFilename,
 		})
 
 	metainfo = append(metainfo,
-		&infrastructure.Metainfo{
+		&domain.Metainfo{
 			Title: "Название картинки",
 			Value: "Суслик в естественной среде обитания",
 		})
 
-	entreq = infrastructure.AddEntity{
+	entreq = domain.Entity{
 		Id:       0,
 		Etype:    constants.BinaryEntity,
 		Props:    props,
@@ -363,8 +363,8 @@ func TestAddCryptoBinary(t *testing.T) {
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// добавление произвольных бинарных данных
-	var props []*infrastructure.Property
-	var metainfo []*infrastructure.Metainfo
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
 
 	p, _ := os.Getwd()
 	parts := strings.Split(p, "internal")
@@ -372,18 +372,18 @@ func TestAddCryptoBinary(t *testing.T) {
 	onlyFilename := filepath.Base(uploadFile)
 
 	props = append(props,
-		&infrastructure.Property{
+		&domain.Property{
 			FieldId: 7,
 			Value:   onlyFilename,
 		})
 
 	metainfo = append(metainfo,
-		&infrastructure.Metainfo{
+		&domain.Metainfo{
 			Title: "Название картинки",
 			Value: "Суслик в естественной среде обитания",
 		})
 
-	entreq := infrastructure.AddEntity{
+	entreq := domain.Entity{
 		Id:       0,
 		Etype:    constants.BinaryEntity,
 		Props:    props,
