@@ -63,7 +63,7 @@ func setupLight(cfg config.ServerConfig) error {
 
 // setupFull полная настройка тестового окружения
 // SSL сертификаты, тестовая база Postgresql, gRPC сервер, gRPC клиент
-func setupFull(cfg config.ServerConfig, cfgClient configclient.ClientConfig) (*domainclient.KeeperClient, *grpc.ClientConn, error) {
+func setupFull(cfg config.ServerConfig, cfgClient configclient.ClientConfig) (*domainclient.GRPCSender, *grpc.ClientConn, error) {
 
 	certDir := getTestsCertDir()
 
