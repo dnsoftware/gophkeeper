@@ -31,9 +31,6 @@ func NewServerConfig() (*ServerConfig, error) {
 	flag.StringVar(&flagCfg.PrivateKeyPath, "p", "", "path to SSL private key file")
 	flag.Parse()
 
-	path, _ := os.Executable()
-	_ = path
-
 	if configFile != "" {
 		rawCfg, err := os.ReadFile(configFile)
 		if err != nil {
@@ -63,30 +60,3 @@ func NewServerConfig() (*ServerConfig, error) {
 
 	return cfg, nil
 }
-
-//func LoadConfig(filenameDefault string) Config {
-//
-//	configFileName := filenameDefault
-//	argsWithoutProg := os.Args[1:]
-//	if len(argsWithoutProg) > 0 {
-//		configFileName = argsWithoutProg[0]
-//	}
-//
-//	fullPath, _ := filepath.Abs(configFileName)
-//
-//	logger.Info("Load config: %v", fullPath)
-//
-//	log.Printf("loading config @ `%s`", fullPath)
-//	rawCfg, err := ioutil.ReadFile(fullPath)
-//	if err != nil {
-//		log.Printf("config file not found: %s", err)
-//		os.Exit(1)
-//	}
-//	cfg := Config{}
-//	if err := yaml.Unmarshal(rawCfg, &cfg); err != nil {
-//		log.Printf("failed parsing config file: %s", err)
-//		os.Exit(1)
-//	}
-//
-//	return cfg
-//}

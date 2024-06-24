@@ -22,14 +22,56 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
+//type ClientSender interface {
+//	Registration(login string, password string, password2 string) (string, error)
+//}
+
 type KeeperClient struct {
 	//cfg *config.ClientConfig
 	pb.KeeperClient
+	//sender    ClientSender
 	token     string
 	password  string
 	secretKey string
 }
 
+type AddEntity struct {
+	Id       int32       // ID сущности
+	Etype    string      // тип сущности: card, text, logopas, binary и т.д.
+	Props    []*Property // массив значений свойств
+	Metainfo []*Metainfo // массив значений метаинформации
+}
+
+type Property struct {
+	EntityId int32  // код сущности
+	FieldId  int32  // код описания поля свйоства
+	Value    string // значение свойства
+}
+
+type Metainfo struct {
+	EntityId int32  // код сущности
+	Title    string // наименование метаинформации
+	Value    string // значение метаинформации
+}
+
+type EntityCode struct {
+	Etype string
+	Name  string
+}
+
+type Field struct {
+	Id               int32
+	Name             string
+	Ftype            string
+	ValidateRules    string
+	ValidateMessages string
+}
+
+//func NewClient() (*KeeperClient, *grpc.ClientConn, error) {
+//
+//}
+
+// NewKeeperClient deprecated TODO удалить
 func NewKeeperClient(serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*KeeperClient, *grpc.ClientConn, error) {
 
 	kc := &KeeperClient{
@@ -59,18 +101,136 @@ func NewKeeperClient(serverAddress string, secretKey string, creds credentials.T
 	return kc, conn, nil
 }
 
-func (t *KeeperClient) Login(ctx context.Context, in *pb.LoginRequest, opts ...grpc.CallOption) (*pb.LoginResponse, error) {
-	lr, err := t.KeeperClient.Login(ctx, in, opts...)
-	t.token = lr.Token
-	t.password = in.Password
+// Registration регистрация пользователя
+// На входе: логин, пароль, повторный пароль
+// Возвращает токен авторизации в случае успеха и ошибку
+func (t *KeeperClient) Registration(ctx context.Context, login string, password string, password2 string) (string, error) {
 
-	return lr, err
+	if password != password2 {
+		return "", fmt.Errorf("пароли не совпадают")
+	}
+
+	res, err := t.KeeperClient.Registration(ctx, &pb.RegisterRequest{
+		Login:          login,
+		Password:       password,
+		RepeatPassword: password2,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if res.Error != "" {
+		return "", fmt.Errorf(res.Error)
+	}
+
+	return res.Token, nil
 }
 
-func (t *KeeperClient) AddEntity(ctx context.Context, in *pb.AddEntityRequest, opts ...grpc.CallOption) (*pb.AddEntityResponse, error) {
+func (t *KeeperClient) Login(ctx context.Context, login string, password string) (string, error) {
+
+	lr, err := t.KeeperClient.Login(ctx, &pb.LoginRequest{
+		Login:    login,
+		Password: password,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if lr.Error != "" {
+		return "", fmt.Errorf(lr.Error)
+	}
+
+	t.token = lr.Token
+	t.password = password
+
+	return lr.Token, err
+}
+
+func (t *KeeperClient) EntityCodes(ctx context.Context) ([]*EntityCode, error) {
+	var opts []grpc.CallOption
+
+	in := &pb.EntityCodesRequest{Token: t.token}
+
+	ec, err := t.KeeperClient.EntityCodes(ctx, in, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	var entcodes = make([]*EntityCode, 0, len(ec.EntityCodes))
+	for _, val := range ec.EntityCodes {
+		entcodes = append(entcodes, &EntityCode{
+			Etype: val.Etype,
+			Name:  val.Name,
+		})
+	}
+
+	return entcodes, nil
+}
+
+func (t *KeeperClient) Fields(ctx context.Context, etype string) ([]*Field, error) {
+	var opts []grpc.CallOption
+
+	in := &pb.FieldsRequest{Etype: etype}
+
+	resp, err := t.KeeperClient.Fields(ctx, in, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	var fd = make([]*Field, 0, len(resp.Fields))
+	for _, val := range resp.Fields {
+		fd = append(fd, &Field{
+			Id:               val.Id,
+			Name:             val.Name,
+			Ftype:            val.Ftype,
+			ValidateRules:    val.ValidateRules,
+			ValidateMessages: val.ValidateMessages,
+		})
+	}
+
+	return fd, nil
+}
+
+func (t *KeeperClient) AddEntity(ctx context.Context, ae AddEntity, opts ...grpc.CallOption) (int32, error) {
+
+	var props = make([]*pb.Property, 0, len(ae.Props))
+	for _, val := range ae.Props {
+		props = append(props, &pb.Property{
+			EntityId: val.EntityId,
+			FieldId:  val.FieldId,
+			Value:    val.Value,
+		})
+	}
+
+	var metainfo = make([]*pb.Metainfo, 0, len(ae.Metainfo))
+	for _, val := range ae.Metainfo {
+		metainfo = append(metainfo, &pb.Metainfo{
+			EntityId: val.EntityId,
+			Title:    val.Title,
+			Value:    val.Value,
+		})
+	}
+
+	in := &pb.AddEntityRequest{
+		Id:       ae.Id,
+		Etype:    ae.Etype,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
 	resp, err := t.KeeperClient.AddEntity(ctx, in, opts...)
 
-	return resp, err
+	if resp.Error != "" {
+		return 0, fmt.Errorf(resp.Error)
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.Id, err
 }
 
 func (t *KeeperClient) UploadBinary(ctx context.Context, entityId int32, file string) (int32, error) {

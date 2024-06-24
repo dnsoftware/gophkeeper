@@ -16,6 +16,7 @@ import (
 	//"google.golang.org/grpc/test/bufconn"
 
 	configclient "github.com/dnsoftware/gophkeeper/internal/client/config"
+	"github.com/dnsoftware/gophkeeper/internal/client/domain"
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 	"github.com/dnsoftware/gophkeeper/internal/server/config"
@@ -134,25 +135,16 @@ func TestRegistration(t *testing.T) {
 	defer conn.Close()
 
 	// несовпадающие пароли - должно выдавать ошибку
-	res, err := client.Registration(ctx, &pb.RegisterRequest{
-		Login:          "username",
-		Password:       "userpass",
-		RepeatPassword: "userpassBad",
-	})
+	_, err = client.Registration(ctx, "username", "userpass", "userpassBad")
 
-	require.NoError(t, err)
-	require.Equal(t, constants.ErrPasswordsNotMatch, res.Error)
+	require.Error(t, err)
+	require.Equal(t, constants.ErrPasswordsNotMatch, err.Error())
 
 	// корректные данные, должно возвратить токен
-	res, err = client.Registration(ctx, &pb.RegisterRequest{
-		Login:          "username",
-		Password:       "userpass",
-		RepeatPassword: "userpass",
-	})
+	token, err := client.Registration(ctx, "username", "userpass", "userpass")
 
 	require.NoError(t, err)
-	require.Equal(t, res.Error, "")
-	require.NotEmpty(t, res.Token)
+	require.NotEmpty(t, token)
 
 }
 
@@ -168,39 +160,25 @@ func TestLogin(t *testing.T) {
 	// регистрируем пользователя
 	login := "username"
 	password := "userpass"
-	_, err = client.Registration(ctx, &pb.RegisterRequest{
-		Login:          login,
-		Password:       password,
-		RepeatPassword: password,
-	})
+	_, err = client.Registration(ctx, login, password, password)
 	require.NoError(t, err)
 
 	// вход с неправильным паролем
-	logResp, err := client.Login(ctx, &pb.LoginRequest{
-		Login:    login,
-		Password: "badpass",
-	})
-	require.NoError(t, err)
-	require.Equal(t, logResp.Token, "")
-	require.Equal(t, logResp.Error, constants.ErrBadPassword)
+	token, err := client.Login(ctx, login, "badpass")
+	require.Error(t, err)
+	require.Equal(t, token, "")
+	require.Equal(t, err.Error(), constants.ErrBadPassword)
 
 	// вход с неправильным логином
-	logResp, err = client.Login(ctx, &pb.LoginRequest{
-		Login:    "bad",
-		Password: password,
-	})
-	require.NoError(t, err)
-	require.Equal(t, logResp.Token, "")
-	require.Equal(t, logResp.Error, constants.ErrNoSuchUser)
+	token, err = client.Login(ctx, "bad", password)
+	require.Error(t, err)
+	require.Equal(t, token, "")
+	require.Equal(t, err.Error(), constants.ErrNoSuchUser)
 
 	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
-	logResp, err = client.Login(ctx, &pb.LoginRequest{
-		Login:    login,
-		Password: password,
-	})
+	token, err = client.Login(ctx, login, password)
 	require.NoError(t, err)
-	require.NotEmpty(t, logResp.Token)
-	require.Empty(t, logResp.Error)
+	require.NotEmpty(t, token)
 	require.NotEmpty(t, client.GetToken())
 
 }
@@ -214,10 +192,10 @@ func TestEntityCodes(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	resp, err := client.EntityCodes(ctx, &pb.EntityCodesRequest{Token: client.GetToken()})
+	entCodes, err := client.EntityCodes(ctx)
 	require.NoError(t, err)
 	require.NoError(t, err)
-	require.Greater(t, len(resp.EntityCodes), 0)
+	require.Greater(t, len(entCodes), 0)
 
 }
 
@@ -230,10 +208,10 @@ func TestFields(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	resp, err := client.Fields(ctx, &pb.FieldsRequest{Etype: "card"})
+	fields, err := client.Fields(ctx, "card")
 	require.NoError(t, err)
 	require.NoError(t, err)
-	require.Equal(t, len(resp.Fields), 3)
+	require.Equal(t, len(fields), 3)
 
 }
 
@@ -249,58 +227,50 @@ func TestAddEntity(t *testing.T) {
 	// регистрируем пользователя
 	login := "username"
 	password := "userpass"
-	_, err = client.Registration(ctx, &pb.RegisterRequest{
-		Login:          login,
-		Password:       password,
-		RepeatPassword: password,
-	})
+	_, err = client.Registration(ctx, login, password, password)
 	require.NoError(t, err)
 
 	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
-	logResp, err := client.Login(ctx, &pb.LoginRequest{
-		Login:    login,
-		Password: password,
-	})
-	md := metadata.New(map[string]string{"token": logResp.Token})
+	token, err := client.Login(ctx, login, password)
+	md := metadata.New(map[string]string{"token": token})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// добавление банковской карты
-	var props []*pb.Property
-	var metainfo []*pb.Metainfo
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
 
 	props = append(props,
-		&pb.Property{
+		&domain.Property{
 			FieldId: 3,
 			Value:   "1111222233334444",
 		},
-		&pb.Property{
+		&domain.Property{
 			FieldId: 4,
 			Value:   "12/25",
 		},
-		&pb.Property{
+		&domain.Property{
 			FieldId: 5,
 			Value:   "123",
 		})
 
 	metainfo = append(metainfo,
-		&pb.Metainfo{
+		&domain.Metainfo{
 			Title: "Владелец карты",
 			Value: "Василий Пупкин",
 		},
-		&pb.Metainfo{
+		&domain.Metainfo{
 			Title: "Банк",
 			Value: "Суслик Инвест",
 		})
 
-	entreq := &pb.AddEntityRequest{
+	entreq := domain.AddEntity{
 		Id:       0,
 		Etype:    constants.CardEntity,
 		Props:    props,
 		Metainfo: metainfo,
 	}
 
-	resp, err := client.AddEntity(ctx, entreq)
-	idEnt := resp.Id
+	idEnt, err := client.AddEntity(ctx, entreq)
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
 
@@ -325,26 +295,25 @@ func TestAddEntity(t *testing.T) {
 	onlyFilename := filepath.Base(uploadFile)
 
 	props = append(props,
-		&pb.Property{
+		&domain.Property{
 			FieldId: 7,
 			Value:   onlyFilename,
 		})
 
 	metainfo = append(metainfo,
-		&pb.Metainfo{
+		&domain.Metainfo{
 			Title: "Название картинки",
 			Value: "Суслик в естественной среде обитания",
 		})
 
-	entreq = &pb.AddEntityRequest{
+	entreq = domain.AddEntity{
 		Id:       0,
 		Etype:    constants.BinaryEntity,
 		Props:    props,
 		Metainfo: metainfo,
 	}
 
-	resp, err = client.AddEntity(ctx, entreq)
-	idEnt = resp.Id
+	idEnt, err = client.AddEntity(ctx, entreq)
 
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
@@ -385,24 +354,17 @@ func TestAddCryptoBinary(t *testing.T) {
 	// регистрируем пользователя
 	login := "username"
 	password := "userpass"
-	_, err = client.Registration(ctx, &pb.RegisterRequest{
-		Login:          login,
-		Password:       password,
-		RepeatPassword: password,
-	})
+	_, err = client.Registration(ctx, login, password, password)
 	require.NoError(t, err)
 
 	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
-	logResp, err := client.Login(ctx, &pb.LoginRequest{
-		Login:    login,
-		Password: password,
-	})
-	md := metadata.New(map[string]string{"token": logResp.Token})
+	token, err := client.Login(ctx, login, password)
+	md := metadata.New(map[string]string{"token": token})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// добавление произвольных бинарных данных
-	var props []*pb.Property
-	var metainfo []*pb.Metainfo
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
 
 	p, _ := os.Getwd()
 	parts := strings.Split(p, "internal")
@@ -410,26 +372,25 @@ func TestAddCryptoBinary(t *testing.T) {
 	onlyFilename := filepath.Base(uploadFile)
 
 	props = append(props,
-		&pb.Property{
+		&domain.Property{
 			FieldId: 7,
 			Value:   onlyFilename,
 		})
 
 	metainfo = append(metainfo,
-		&pb.Metainfo{
+		&domain.Metainfo{
 			Title: "Название картинки",
 			Value: "Суслик в естественной среде обитания",
 		})
 
-	entreq := &pb.AddEntityRequest{
+	entreq := domain.AddEntity{
 		Id:       0,
 		Etype:    constants.BinaryEntity,
 		Props:    props,
 		Metainfo: metainfo,
 	}
 
-	resp, err := client.AddEntity(ctx, entreq)
-	idEnt := resp.Id
+	idEnt, err := client.AddEntity(ctx, entreq)
 
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
