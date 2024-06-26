@@ -26,6 +26,7 @@ func (p *PgStorage) GetEntityFields(ctx context.Context, etype string) ([]field.
 		if err != nil {
 			return nil, fmt.Errorf("GetEntityFields: %w", err)
 		}
+		ef.Etype = etype
 		fields = append(fields, ef)
 	}
 

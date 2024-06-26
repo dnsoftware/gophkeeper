@@ -152,6 +152,7 @@ func (t *GRPCSender) Fields(etype string) ([]*domain.Field, error) {
 	for _, val := range resp.Fields {
 		fd = append(fd, &domain.Field{
 			Id:               val.Id,
+			Etype:            val.Etype,
 			Name:             val.Name,
 			Ftype:            val.Ftype,
 			ValidateRules:    val.ValidateRules,

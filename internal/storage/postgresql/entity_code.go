@@ -7,7 +7,7 @@ import (
 
 func (p *PgStorage) GetEntityCodes(ctx context.Context) (map[string]string, error) {
 
-	query := `SELECT * FROM entity_codes`
+	query := `SELECT * FROM entity_codes ORDER BY etype`
 	cRows, err := p.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("GetEntityCodes error: %w", err)

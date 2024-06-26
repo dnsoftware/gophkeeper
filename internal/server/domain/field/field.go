@@ -9,6 +9,7 @@ type FieldStorage interface {
 
 type EntityFields struct {
 	ID               int32
+	Etype            string
 	Name             string
 	Ftype            string
 	ValidateRules    string

@@ -21,6 +21,7 @@ func (g *GRPCServer) Fields(ctx context.Context, in *pb.FieldsRequest) (*pb.Fiel
 	for _, val := range fields {
 		f = append(f, &pb.Field{
 			Id:               val.ID,
+			Etype:            val.Etype,
 			Name:             val.Name,
 			Ftype:            val.Ftype,
 			ValidateRules:    val.ValidateRules,

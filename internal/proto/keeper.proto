@@ -64,6 +64,7 @@ message EntityCodesResponse {
 // объект "Поле сущности"
 message Field {
   int32 id = 1;                 // код поля
+  string etype = 2;             // тип сущности (card? binary и т.д.)
   string name = 3;              // наименование поля
   string ftype = 4;             // тип поля (string, path и т.п.)
   string validate_rules = 5;    // правила валидации

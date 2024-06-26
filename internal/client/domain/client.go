@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -52,6 +53,7 @@ type EntityCode struct {
 type Field struct {
 	Id               int32
 	Name             string
+	Etype            string
 	Ftype            string
 	ValidateRules    string
 	ValidateMessages string
@@ -142,7 +144,152 @@ func (c *GophKeepClient) Start() {
 		}
 	}
 
-	// Основная логика
+	// Инициализация списка сущностей, с которыми можно работать
+	entCodes, err := c.Sender.EntityCodes()
+	if err != nil {
+		c.rl.Writeln(fmt.Sprintf("Ошибка загрузки сущностей: %v", err))
+	}
+	for _, val := range entCodes {
+		c.rl.etypes[val.Etype] = val.Name
+	}
+
+	// Инициализация описаний полей сущностей
+	for _, val := range entCodes {
+		fields, err := c.Sender.Fields(val.Etype)
+		if err != nil {
+			c.rl.Writeln(fmt.Sprintf("Ошибка загрузки полей с описаниями: %v", err))
+		}
+		c.rl.MakeFieldsDescription(fields)
+	}
+
+	/************** Основная логика ************/
+
+	c.rl.Writeln("")
+	c.rl.Writeln("Доступна работа со следующими объектами:")
+	for i, val := range entCodes {
+		c.rl.Writeln(fmt.Sprintf("[%v] %v", i+1, val.Name))
+	}
+
+	var objStr string
+	for {
+		objStr, err = c.rl.input("Выберите номер объекта:", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
+		if err != nil {
+			c.rl.Writeln(err.Error())
+			continue
+		}
+		break
+	}
+	objIndex, _ := strconv.Atoi(objStr)
+	entCode := entCodes[objIndex-1]
+	c.rl.Writeln("")
+	c.rl.Writeln(fmt.Sprintf(`Для объекта "%v" доступны следующие действия:`, entCode.Name))
+	c.rl.Writeln("[1] Добавить новый")
+	c.rl.Writeln("[2] Получить сохраненный")
+	var doStr string
+	for {
+		for {
+			doStr, err = c.rl.input(">>", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
+			if err != nil {
+				c.rl.Writeln(err.Error())
+				continue
+			}
+			break
+		}
+
+		switch doStr {
+		// Добавление сущности, поочередно вводим данные в поля
+		case "1":
+			var props []*Property
+			var metas []*Metainfo
+			entity := Entity{
+				Id:       0,
+				UserID:   0,
+				Etype:    entCode.Etype,
+				Props:    nil,
+				Metainfo: nil,
+			}
+
+			// Заполняем обязательные поля
+			for _, val := range c.rl.fieldsGroup[entCode.Etype] {
+				fieldData, err := c.rl.input(val.Name+":", val.ValidateRules, val.ValidateMessages)
+				if err != nil {
+					c.rl.Writeln(err.Error())
+					continue
+				}
+				props = append(props, &Property{
+					EntityId: 0,
+					FieldId:  val.Id,
+					Value:    fieldData,
+				})
+			}
+			// Заполняем поля метаданных
+			// Добавить или перейти дальше
+			nextTag := false
+			for {
+				c.rl.Writeln("")
+				c.rl.Writeln("Выберите дальнейшее действие:")
+				c.rl.Writeln("[1] Добавить метаданные")
+				c.rl.Writeln("[2] Перейти к сохранению")
+				addOrNext, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+				if err != nil {
+					c.rl.Writeln(err.Error())
+					continue
+				}
+
+				switch addOrNext {
+				case "1":
+					for {
+						metaName, err := c.rl.input("Название поля метаданных:", "required", `{"required": "Укажите название поля метаданных"}`)
+						if err != nil {
+							c.rl.Writeln(err.Error())
+							continue
+						}
+
+						metaValue, err := c.rl.input("Значение поля метаданных:", "required", `{"required": "Укажите значение поля метаданных"}`)
+						if err != nil {
+							c.rl.Writeln(err.Error())
+							continue
+						}
+
+						metas = append(metas, &Metainfo{
+							EntityId: 0,
+							Title:    metaName,
+							Value:    metaValue,
+						})
+
+						break
+					}
+				case "2":
+					nextTag = true
+					break
+				default:
+					continue
+				}
+
+				if nextTag {
+					entity.Props = props
+					entity.Metainfo = metas
+
+					// Просмотр и сохранение
+					c.DisplayEntity(entity)
+
+					break
+				}
+			}
+
+			break
+
+		// Просмотр сохраненной сущности, получаем список для дальнейшего выбора
+		case "2":
+
+		default:
+			c.rl.Writeln("Неверный выбор!")
+			continue
+		}
+
+		break
+	}
+
 	for {
 		line, err := c.rl.Readline()
 		if err == readline.ErrInterrupt {
@@ -213,6 +360,19 @@ func (c *GophKeepClient) Start() {
 		}
 	}
 exit:
+}
+
+// DisplayEntity отобразить сужность в консоли
+func (c *GophKeepClient) DisplayEntity(ent Entity) {
+	c.rl.Writeln("------------------------")
+	c.rl.Writeln(" " + c.rl.etypes[ent.Etype])
+	for _, val := range ent.Props {
+		c.rl.Writeln("      " + c.rl.fieldsByID[val.FieldId].Name + ": " + val.Value)
+	}
+	for _, val := range ent.Metainfo {
+		c.rl.Writeln("      " + val.Title + ": " + val.Value)
+	}
+	c.rl.Writeln("------------------------")
 }
 
 func usage(w io.Writer) {

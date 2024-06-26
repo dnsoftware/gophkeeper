@@ -14,7 +14,9 @@ type CLIReader struct {
 	*readline.Instance
 	validator   *validator.Validate
 	passwordCfg *readline.Config
-	fields      map[string][]Field
+	etypes      map[string]string
+	fieldsByID  map[int32]*Field    // карта описаний полей сущности с ключом по ID поля из таблицы fields
+	fieldsGroup map[string][]*Field // карта описаний полей сущности,сгруппированных по типу сущности (card, logopas, text, binary и т.д.)
 }
 
 const (
@@ -45,10 +47,20 @@ func NewCLIReadline(cfg *readline.Config) (*CLIReader, error) {
 		rl,
 		vdr,
 		passwordCfg,
-		nil,
+		make(map[string]string),
+		make(map[int32]*Field),
+		make(map[string][]*Field),
 	}
 
 	return cli, nil
+}
+
+// MakeFieldsDescription Формирование карт описаний полей сущностей
+func (r *CLIReader) MakeFieldsDescription(fields []*Field) {
+	for _, val := range fields {
+		r.fieldsByID[val.Id] = val
+		r.fieldsGroup[val.Etype] = append(r.fieldsGroup[val.Etype], val)
+	}
 }
 
 // Registration Ввод регистрационных данных
@@ -167,7 +179,6 @@ func (r *CLIReader) input(prompt string, validateRules string, validateMessages 
 		return "", err
 	}
 
-	r.Writeln("")
 	for {
 		r.SetPrompt(prompt)
 		value, err = r.Readline()
