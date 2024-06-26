@@ -51,7 +51,7 @@ message EntityCode {
 
 // Запрос списка доступных к добавлению типов сущностей (таблица entity_codes)
 message EntityCodesRequest {
-  string token = 1; // токен доступа
+
 }
 
 // Ответ на запрос списка доступных к добавлению типов сущностей (таблица entity_codes)

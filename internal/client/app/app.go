@@ -1,7 +1,15 @@
 package app
 
 import (
+	"os"
+	"strings"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
 	"github.com/dnsoftware/gophkeeper/internal/client/config"
+	"github.com/dnsoftware/gophkeeper/internal/client/domain"
+	"github.com/dnsoftware/gophkeeper/internal/client/infrastructure"
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
@@ -14,10 +22,26 @@ func ClientRun() {
 	}
 	logger.Log().Info("Client starting...")
 
-	//client, err := domain.NewKeeperClient(cfg.ServerAddress, cfg.SecretKey, nil, nil)
-	//if err != nil {
-	//	logger.Log().Fatal(err.Error())
-	//}
-	//
-	//client.Start()
+	path, _ := os.Getwd()
+	sep := "internal"
+	parts := strings.Split(path, sep)
+	certFile := parts[0] + "/" + sep + "/certs/ca.crt"
+
+	creds, err := credentials.NewClientTLSFromFile(certFile, "")
+	if err != nil {
+		logger.Log().Fatal(err.Error())
+	}
+
+	var opts []grpc.DialOption
+	sender, _, err := infrastructure.NewGRPCSender(cfg.ServerAddress, cfg.SecretKey, creds, opts...)
+	if err != nil {
+		logger.Log().Fatal(err.Error())
+	}
+
+	client, err := domain.NewGophKeepClient(sender)
+	if err != nil {
+		logger.Log().Fatal(err.Error())
+	}
+
+	client.Start()
 }

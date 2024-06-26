@@ -82,6 +82,8 @@ func NewGRPCServer(services Services, certificateKeyPath string, privateKeyPath 
 		opts = append(opts, grpc.Creds(creds))
 	}
 
+	opts = append(opts, grpc.ChainUnaryInterceptor(checkUserInterceptor))
+
 	// создаём gRPC-сервер
 	server.Server = grpc.NewServer(opts...)
 

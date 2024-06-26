@@ -62,3 +62,10 @@ const (
 	ErrBadPassword       string = "bad password"
 	ErrNoSuchUser        string = "no such user"
 )
+
+// Методы для которых не проверяем токен авторизации
+const (
+	ExcludeMethodPing         string = "/proto.Keeper/Ping"
+	ExcludeMethodRegistration string = "/proto.Keeper/Registration"
+	ExcludeMethodLogin        string = "/proto.Keeper/Login"
+)

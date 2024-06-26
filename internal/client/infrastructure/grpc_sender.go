@@ -26,14 +26,14 @@ type GRPCSender struct {
 	pb.KeeperClient
 	token     string
 	password  string
-	secretKey string
+	SecretKey string
 }
 
 // NewGRPCSender обмен данными с сервером
 func NewGRPCSender(serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*GRPCSender, *grpc.ClientConn, error) {
 
 	kc := &GRPCSender{
-		secretKey: secretKey,
+		SecretKey: secretKey,
 	}
 
 	// перехватчики
@@ -46,8 +46,7 @@ func NewGRPCSender(serverAddress string, secretKey string, creds credentials.Tra
 
 	opts = append(opts,
 		grpc.WithTransportCredentials(creds),
-		grpc.WithUnaryInterceptor(authInterceptor.TokenInterceptor()),
-		grpc.WithUnaryInterceptor(dataOutInterceptor.DataOutputInterceptor()))
+		grpc.WithChainUnaryInterceptor(authInterceptor.TokenInterceptor(), dataOutInterceptor.DataOutputInterceptor()))
 
 	conn, err := grpc.NewClient(serverAddress, opts...)
 	if err != nil {
@@ -62,7 +61,9 @@ func NewGRPCSender(serverAddress string, secretKey string, creds credentials.Tra
 // Registration регистрация пользователя
 // На входе: логин, пароль, повторный пароль
 // Возвращает токен авторизации в случае успеха и ошибку
-func (t *GRPCSender) Registration(ctx context.Context, login string, password string, password2 string) (string, error) {
+func (t *GRPCSender) Registration(login string, password string, password2 string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
 
 	if password != password2 {
 		return "", fmt.Errorf("пароли не совпадают")
@@ -82,10 +83,15 @@ func (t *GRPCSender) Registration(ctx context.Context, login string, password st
 		return "", fmt.Errorf(res.Error)
 	}
 
+	t.token = res.Token
+	t.password = password
+
 	return res.Token, nil
 }
 
-func (t *GRPCSender) Login(ctx context.Context, login string, password string) (string, error) {
+func (t *GRPCSender) Login(login string, password string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
 
 	lr, err := t.KeeperClient.Login(ctx, &pb.LoginRequest{
 		Login:    login,
@@ -103,13 +109,16 @@ func (t *GRPCSender) Login(ctx context.Context, login string, password string) (
 	t.token = lr.Token
 	t.password = password
 
-	return lr.Token, err
+	return lr.Token, nil
 }
 
-func (t *GRPCSender) EntityCodes(ctx context.Context) ([]*domain.EntityCode, error) {
+func (t *GRPCSender) EntityCodes() ([]*domain.EntityCode, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
+
 	var opts []grpc.CallOption
 
-	in := &pb.EntityCodesRequest{Token: t.token}
+	in := &pb.EntityCodesRequest{}
 
 	ec, err := t.KeeperClient.EntityCodes(ctx, in, opts...)
 	if err != nil {
@@ -127,9 +136,11 @@ func (t *GRPCSender) EntityCodes(ctx context.Context) ([]*domain.EntityCode, err
 	return entcodes, nil
 }
 
-func (t *GRPCSender) Fields(ctx context.Context, etype string) ([]*domain.Field, error) {
-	var opts []grpc.CallOption
+func (t *GRPCSender) Fields(etype string) ([]*domain.Field, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
 
+	var opts []grpc.CallOption
 	in := &pb.FieldsRequest{Etype: etype}
 
 	resp, err := t.KeeperClient.Fields(ctx, in, opts...)
@@ -151,9 +162,11 @@ func (t *GRPCSender) Fields(ctx context.Context, etype string) ([]*domain.Field,
 	return fd, nil
 }
 
-func (t *GRPCSender) AddEntity(ctx context.Context, ae domain.Entity) (int32, error) {
-	var opts []grpc.CallOption
+func (t *GRPCSender) AddEntity(ae domain.Entity) (int32, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
 
+	var opts []grpc.CallOption
 	var props = make([]*pb.Property, 0, len(ae.Props))
 	for _, val := range ae.Props {
 		props = append(props, &pb.Property{
@@ -192,8 +205,9 @@ func (t *GRPCSender) AddEntity(ctx context.Context, ae domain.Entity) (int32, er
 	return resp.Id, err
 }
 
-func (t *GRPCSender) UploadBinary(ctx context.Context, entityId int32, file string) (int32, error) {
-	stream, err := t.KeeperClient.UploadBinary(ctx)
+func (t *GRPCSender) UploadBinary(entityId int32, file string) (int32, error) {
+
+	stream, err := t.KeeperClient.UploadBinary(context.Background())
 	if err != nil {
 		return 0, err
 	}
@@ -234,9 +248,9 @@ func (t *GRPCSender) UploadBinary(ctx context.Context, entityId int32, file stri
 }
 
 // DownloadBinary возвращает путь к загруженному файлу
-func (t *GRPCSender) DownloadBinary(ctx context.Context, entityId int32, fileName string) (string, error) {
+func (t *GRPCSender) DownloadBinary(entityId int32, fileName string) (string, error) {
 
-	stream, err := t.KeeperClient.DownloadBinary(ctx, &pb.DownloadBinRequest{EntityId: entityId})
+	stream, err := t.KeeperClient.DownloadBinary(context.Background(), &pb.DownloadBinRequest{EntityId: entityId})
 	if err != nil {
 		return "", err
 	}
@@ -286,8 +300,8 @@ func (t *GRPCSender) DownloadBinary(ctx context.Context, entityId int32, fileNam
 
 /************************************ Шифрование бинарного потока ************************************/
 
-func (t *GRPCSender) UploadCryptoBinary(ctx context.Context, entityId int32, file string) (int32, error) {
-	stream, err := t.KeeperClient.UploadCryptoBinary(ctx)
+func (t *GRPCSender) UploadCryptoBinary(entityId int32, file string) (int32, error) {
+	stream, err := t.KeeperClient.UploadCryptoBinary(context.Background())
 	if err != nil {
 		return 0, err
 	}
@@ -310,7 +324,7 @@ func (t *GRPCSender) UploadCryptoBinary(ctx context.Context, entityId int32, fil
 		}
 
 		// шифруем
-		cryptoKey := utils.SymmPassCreate(t.password, t.secretKey)
+		cryptoKey := utils.SymmPassCreate(t.password, t.SecretKey)
 		crypted := utils.EncryptBinary(buf[:num], cryptoKey)
 
 		if err := stream.Send(&pb.UploadBinRequest{EntityId: entityId, ChunkData: crypted}); err != nil {
@@ -331,10 +345,10 @@ func (t *GRPCSender) UploadCryptoBinary(ctx context.Context, entityId int32, fil
 
 }
 
-func (t *GRPCSender) DownloadCryptoBinary(ctx context.Context, entityId int32, fileName string) (string, error) {
-	cryptoKey := utils.SymmPassCreate(t.password, t.secretKey)
+func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (string, error) {
+	cryptoKey := utils.SymmPassCreate(t.password, t.SecretKey)
 
-	stream, err := t.KeeperClient.DownloadCryptoBinary(ctx, &pb.DownloadBinRequest{EntityId: entityId})
+	stream, err := t.KeeperClient.DownloadCryptoBinary(context.Background(), &pb.DownloadBinRequest{EntityId: entityId})
 	if err != nil {
 		return "", err
 	}

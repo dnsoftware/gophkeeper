@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -45,8 +44,9 @@ func (i *AuthInterceptor) TokenInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption,
 	) error {
 
+		token := i.actualToken.GetToken()
 		if ok := i.excludeMethods[method]; !ok {
-			ctx = metadata.AppendToOutgoingContext(ctx, constants.TokenKey, i.actualToken.GetToken())
+			ctx = metadata.AppendToOutgoingContext(ctx, constants.TokenKey, token)
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
@@ -86,7 +86,6 @@ func (d *DataOutInterceptor) DataOutputInterceptor() grpc.UnaryClientInterceptor
 
 		parts := strings.Split(method, "/")
 		methodName := parts[len(parts)-1]
-		fmt.Println(d.validMethods[methodName])
 
 		if d.validMethods[methodName] {
 			// логика шифрования

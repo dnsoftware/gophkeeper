@@ -128,20 +128,18 @@ func TestBadTLSCreds(t *testing.T) {
 
 func TestRegistration(t *testing.T) {
 
-	ctx := context.Background()
-
 	client, conn, err := setupFull(cfg, cfgClient)
 	require.NoError(t, err)
 	defer conn.Close()
 
 	// несовпадающие пароли - должно выдавать ошибку
-	_, err = client.Registration(ctx, "username", "userpass", "userpassBad")
+	_, err = client.Registration("username", "userpass", "userpassBad")
 
 	require.Error(t, err)
 	require.Equal(t, constants.ErrPasswordsNotMatch, err.Error())
 
 	// корректные данные, должно возвратить токен
-	token, err := client.Registration(ctx, "username", "userpass", "userpass")
+	token, err := client.Registration("username", "userpass", "userpass")
 
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
@@ -151,8 +149,6 @@ func TestRegistration(t *testing.T) {
 // TestLogin вход на сервер и получение токена
 func TestLogin(t *testing.T) {
 
-	ctx := context.Background()
-
 	client, conn, err := setupFull(cfg, cfgClient)
 	require.NoError(t, err)
 	defer conn.Close()
@@ -160,23 +156,23 @@ func TestLogin(t *testing.T) {
 	// регистрируем пользователя
 	login := "username"
 	password := "userpass"
-	_, err = client.Registration(ctx, login, password, password)
+	_, err = client.Registration(login, password, password)
 	require.NoError(t, err)
 
 	// вход с неправильным паролем
-	token, err := client.Login(ctx, login, "badpass")
+	token, err := client.Login(login, "badpass")
 	require.Error(t, err)
 	require.Equal(t, token, "")
 	require.Equal(t, err.Error(), constants.ErrBadPassword)
 
 	// вход с неправильным логином
-	token, err = client.Login(ctx, "bad", password)
+	token, err = client.Login("bad", password)
 	require.Error(t, err)
 	require.Equal(t, token, "")
 	require.Equal(t, err.Error(), constants.ErrNoSuchUser)
 
 	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
-	token, err = client.Login(ctx, login, password)
+	token, err = client.Login(login, password)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 	require.NotEmpty(t, client.GetToken())
@@ -186,13 +182,21 @@ func TestLogin(t *testing.T) {
 // TestEntityCodes получение справочника кодов сущностей с сервера
 func TestEntityCodes(t *testing.T) {
 
-	ctx := context.Background()
-
 	client, conn, err := setupFull(cfg, cfgClient)
 	require.NoError(t, err)
 	defer conn.Close()
 
-	entCodes, err := client.EntityCodes(ctx)
+	// регистрируем пользователя
+	login := "username"
+	password := "userpass"
+	_, err = client.Registration(login, password, password)
+	require.NoError(t, err)
+
+	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
+	_, err = client.Login(login, password)
+	require.NoError(t, err)
+
+	entCodes, err := client.EntityCodes()
 	require.NoError(t, err)
 	require.NoError(t, err)
 	require.Greater(t, len(entCodes), 0)
@@ -202,13 +206,21 @@ func TestEntityCodes(t *testing.T) {
 // TestFields получение набора характеристик полей сущности с сервера
 func TestFields(t *testing.T) {
 
-	ctx := context.Background()
-
 	client, conn, err := setupFull(cfg, cfgClient)
 	require.NoError(t, err)
 	defer conn.Close()
 
-	fields, err := client.Fields(ctx, "card")
+	// регистрируем пользователя
+	login := "username"
+	password := "userpass"
+	_, err = client.Registration(login, password, password)
+	require.NoError(t, err)
+
+	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
+	_, err = client.Login(login, password)
+	require.NoError(t, err)
+
+	fields, err := client.Fields("card")
 	require.NoError(t, err)
 	require.NoError(t, err)
 	require.Equal(t, len(fields), 3)
@@ -227,11 +239,11 @@ func TestAddEntity(t *testing.T) {
 	// регистрируем пользователя
 	login := "username"
 	password := "userpass"
-	_, err = client.Registration(ctx, login, password, password)
+	_, err = client.Registration(login, password, password)
 	require.NoError(t, err)
 
 	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
-	token, err := client.Login(ctx, login, password)
+	token, err := client.Login(login, password)
 	md := metadata.New(map[string]string{"token": token})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -270,7 +282,7 @@ func TestAddEntity(t *testing.T) {
 		Metainfo: metainfo,
 	}
 
-	idEnt, err := client.AddEntity(ctx, entreq)
+	idEnt, err := client.AddEntity(entreq)
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
 
@@ -313,13 +325,13 @@ func TestAddEntity(t *testing.T) {
 		Metainfo: metainfo,
 	}
 
-	idEnt, err = client.AddEntity(ctx, entreq)
+	idEnt, err = client.AddEntity(entreq)
 
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
 
 	// теперь после заведения записи на сервере загружаем бинарник на сервер
-	size, err := client.UploadBinary(ctx, idEnt, uploadFile)
+	size, err := client.UploadBinary(idEnt, uploadFile)
 	require.NoError(t, err)
 	require.Greater(t, size, int32(0))
 
@@ -334,7 +346,7 @@ func TestAddEntity(t *testing.T) {
 	err = json.Unmarshal([]byte(entBin.Props[0].Value), fd)
 	require.NoError(t, err)
 
-	downloadFile, err := client.DownloadBinary(ctx, idEnt, fd.Clientname)
+	downloadFile, err := client.DownloadBinary(idEnt, fd.Clientname)
 	require.NoError(t, err)
 	require.NotEmpty(t, downloadFile)
 
@@ -354,11 +366,11 @@ func TestAddCryptoBinary(t *testing.T) {
 	// регистрируем пользователя
 	login := "username"
 	password := "userpass"
-	_, err = client.Registration(ctx, login, password, password)
+	_, err = client.Registration(login, password, password)
 	require.NoError(t, err)
 
 	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
-	token, err := client.Login(ctx, login, password)
+	token, err := client.Login(login, password)
 	md := metadata.New(map[string]string{"token": token})
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -390,13 +402,13 @@ func TestAddCryptoBinary(t *testing.T) {
 		Metainfo: metainfo,
 	}
 
-	idEnt, err := client.AddEntity(ctx, entreq)
+	idEnt, err := client.AddEntity(entreq)
 
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
 
 	// теперь после заведения записи на сервере загружаем бинарник на сервер
-	size, err := client.UploadCryptoBinary(ctx, idEnt, uploadFile)
+	size, err := client.UploadCryptoBinary(idEnt, uploadFile)
 	require.NoError(t, err)
 	require.Greater(t, size, int32(0))
 
@@ -411,7 +423,7 @@ func TestAddCryptoBinary(t *testing.T) {
 	err = json.Unmarshal([]byte(entBin.Props[0].Value), fd)
 	require.NoError(t, err)
 
-	downloadFile, err := client.DownloadCryptoBinary(ctx, idEnt, fd.Clientname)
+	downloadFile, err := client.DownloadCryptoBinary(idEnt, fd.Clientname)
 	require.NoError(t, err)
 	require.NotEmpty(t, downloadFile)
 }

@@ -96,6 +96,7 @@ func setupFull(cfg config.ServerConfig, cfgClient configclient.ClientConfig) (*d
 	if err != nil {
 		return nil, nil, err
 	}
+
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithContextDialer(bufDialer))
 	client, conn, err := domainclient.NewGRPCSender(cfg.ServerAddress, cfgClient.SecretKey, creds, opts...)
