@@ -98,7 +98,7 @@ func (c *GophKeepClient) Start() {
 
 	// Логин или регистрация
 	for {
-		c.rl.Writeln("Нажмите [Enter] для входа или \"r\" для регистрации  ")
+		fmt.Println("Нажмите [Enter] для входа или \"r\" для регистрации  ")
 		line, err := c.rl.Readline()
 		if err != nil {
 			c.rl.Writeln(err.Error())
@@ -163,6 +163,8 @@ func (c *GophKeepClient) Start() {
 	}
 
 	/************** Основная логика ************/
+
+STARTWORK:
 
 	c.rl.Writeln("")
 	c.rl.Writeln("Доступна работа со следующими объектами:")
@@ -272,6 +274,27 @@ func (c *GophKeepClient) Start() {
 
 					// Просмотр и сохранение
 					c.DisplayEntity(entity)
+
+					for {
+						c.rl.Writeln("")
+						c.rl.Writeln("Выберите дальнейшее действие:")
+						c.rl.Writeln("[1] Начать заново")
+						c.rl.Writeln("[2] Сохранить")
+						againOrSave, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+						if err != nil {
+							c.rl.Writeln(err.Error())
+							continue
+						}
+
+						switch againOrSave {
+						case "1":
+							goto STARTWORK
+						case "2":
+							fmt.Println("сохранить")
+						default:
+							continue
+						}
+					}
 
 					break
 				}
