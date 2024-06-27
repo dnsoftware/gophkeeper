@@ -36,8 +36,11 @@ migration_add:
 	# бинарник migrate взят тут https://github.com/golang-migrate/migrate/releases
 	cmd/server/migrations/migrate create -ext sql -dir cmd/server/migrations -seq $(name)
 
-gen_keeper:
+mock_keeper:
 	mockgen -source=internal/server/domain/user/user.go -destination=internal/server/mocks/mock_user.go -package="mocks"
 	mockgen -source=internal/server/domain/entity_code/entity_code.go -destination=internal/server/mocks/mock_entity_code.go  -package="mocks"
 	mockgen -source=internal/server/domain/field/field.go -destination=internal/server/mocks/mock_field.go  -package="mocks"
 	mockgen -source=internal/server/domain/entity/entity.go -destination=internal/server/mocks/mock_entity.go  -package="mocks"
+
+mock_client:
+	mockgen -source=internal/client/domain/client.go -destination=internal/client/mocks/mock_client.go  -package="mocksclient"

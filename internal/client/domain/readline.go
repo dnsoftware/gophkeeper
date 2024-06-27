@@ -71,6 +71,7 @@ func (r *CLIReader) Registration() (string, string, error) {
 	login, err := r.input("Регистрационный логин:", "required", `{"required": "Логин не может быть пустым"}`)
 	if err != nil {
 		if err.Error() == "interrupt" {
+			r.Writeln(err.Error())
 			r.Close()
 		}
 	}
