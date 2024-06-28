@@ -60,7 +60,7 @@ type Entity struct {
 }
 
 // BinaryFileProperty Данные в поле свойства бинарной сущности содержат JSON в формате:
-// {"servername": "имя файла на сервере (полный путь), "clientname": "только имя файла, под которым его грузили с клиента"}
+// {"servername": "имя файла на сервере (полный путь), "clientname": "только имя файла, под которым его грузили с клиента", "chunkcount": "кол-во фрагментов на которые разбит файл"}
 type BinaryFileProperty struct {
 	Servername string `json:"servername"`
 	Clientname string `json:"clientname"`

@@ -287,10 +287,7 @@ func TestAddEntity(t *testing.T) {
 	require.Greater(t, idEnt, int32(0))
 
 	// Получение добавленной банковской карты
-	req := &pb.EntityRequest{
-		Id: idEnt,
-	}
-	ent, err := client.Entity(ctx, req)
+	ent, err := client.Entity(idEnt)
 	_ = ent
 	require.NoError(t, err)
 	require.Equal(t, "1111222233334444", ent.Props[0].Value)
@@ -336,10 +333,7 @@ func TestAddEntity(t *testing.T) {
 	require.Greater(t, size, int32(0))
 
 	// получаем данные бинарной сущности и загружаем бинарник с сервера
-	reqBin := &pb.EntityRequest{
-		Id: idEnt,
-	}
-	entBin, err := client.Entity(ctx, reqBin)
+	entBin, err := client.Entity(idEnt)
 	require.NoError(t, err)
 
 	fd := &entity.BinaryFileProperty{}
@@ -413,10 +407,7 @@ func TestAddCryptoBinary(t *testing.T) {
 	require.Greater(t, size, int32(0))
 
 	// получаем данные бинарной сущности и загружаем бинарник с сервера
-	reqBin := &pb.EntityRequest{
-		Id: idEnt,
-	}
-	entBin, err := client.Entity(ctx, reqBin)
+	entBin, err := client.Entity(idEnt)
 	require.NoError(t, err)
 
 	fd := &entity.BinaryFileProperty{}
@@ -517,10 +508,7 @@ func TestEntityList(t *testing.T) {
 	require.NoError(t, err)
 	require.Greater(t, idEnt, int32(0))
 
-	req := &pb.EntityRequest{
-		Id: idEnt,
-	}
-	ent, err := client.Entity(ctx, req)
+	ent, err := client.Entity(idEnt)
 	_ = ent
 
 	// Получаем список

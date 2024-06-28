@@ -66,6 +66,14 @@ type GophKeepClient struct {
 	Sender Sender
 }
 
+// BinaryFileProperty Данные в поле свойства бинарной сущности содержат JSON в формате:
+// {"servername": "имя файла на сервере (полный путь), "clientname": "только имя файла, под которым его грузили с клиента", "chunkcount": "кол-во фрагментов на которые разбит файл"}
+type BinaryFileProperty struct {
+	Servername string `json:"servername"`
+	Clientname string `json:"clientname"`
+	Chunkcount int32  `json:"chunkcount"`
+}
+
 const (
 	WorkAgain string = "again"
 	WorkStop  string = "stop"
@@ -258,13 +266,24 @@ func (c *GophKeepClient) Start() {
 exit:
 }
 
-// DisplayEntity отобразить сужность в консоли
+// DisplayEntity отобразить сущность в консоли
 func (c *GophKeepClient) DisplayEntity(ent Entity) {
 	c.rl.Writeln("------------------------")
 	c.rl.Writeln(" " + c.rl.etypes[ent.Etype])
 	for _, val := range ent.Props {
 		c.rl.Writeln("      " + c.rl.fieldsByID[val.FieldId].Name + ": " + val.Value)
 	}
+	for _, val := range ent.Metainfo {
+		c.rl.Writeln("      " + val.Title + ": " + val.Value)
+	}
+	c.rl.Writeln("------------------------")
+}
+
+// DisplayEntityBinary отобразить сущность в консоли и показать путь к загруженному файлу
+func (c *GophKeepClient) DisplayEntityBinary(ent Entity, filePath string) {
+	c.rl.Writeln("------------------------")
+	c.rl.Writeln(" " + c.rl.etypes[ent.Etype])
+	c.rl.Writeln("Путь к загруженному файлу: " + filePath)
 	for _, val := range ent.Metainfo {
 		c.rl.Writeln("      " + val.Title + ": " + val.Value)
 	}

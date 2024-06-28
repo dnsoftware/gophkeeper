@@ -347,6 +347,8 @@ func (t *GRPCSender) UploadCryptoBinary(entityId int32, file string) (int32, err
 
 }
 
+// DownloadCryptoBinary загрузка бинарного файла с сервера
+// fileName - имя файла (без полного пути) для сохранения
 func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (string, error) {
 	cryptoKey := utils.SymmPassCreate(t.password, t.SecretKey)
 
@@ -357,7 +359,8 @@ func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (stri
 
 	wd, _ := os.Getwd()
 	parts := strings.Split(wd, "internal")
-	uploadDir := parts[0] + "cmd/client/" + constants.FileStorage
+	uploadDir := parts[0] + "/cmd/client/" + constants.FileStorage
+	uploadDir = strings.Replace(uploadDir, "//", "/", -1)
 	err = os.MkdirAll(uploadDir, os.ModePerm)
 	if err != nil {
 		return "", err
@@ -404,7 +407,7 @@ func (t *GRPCSender) Entity(id int32) (*domain.Entity, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
 
-	resp, err := t.KeeperClient.Entity(ctx, &pb.EntityRequest{Id: id})
+	resp, err := t.KeeperClient.Entity(ctx, &pb.EntityRequest{Id: int32(id)})
 	if err != nil {
 		return nil, err
 	}
@@ -515,9 +518,13 @@ func (t *GRPCSender) EntityList(etype string) (map[int32]string, error) {
 
 		str := ""
 		for ek, ev := range m {
-			k := utils.Decrypt(ek, cryptoKey)
-			v := utils.Decrypt(ev, cryptoKey)
-			str = str + k + ":" + v + ". "
+			if ek == "" {
+				str = str + "нет описания. "
+			} else {
+				k := utils.Decrypt(ek, cryptoKey)
+				v := utils.Decrypt(ev, cryptoKey)
+				str = str + k + ":" + v + ". "
+			}
 		}
 
 		list[key] = str

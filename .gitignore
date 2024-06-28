@@ -33,3 +33,4 @@ coverage.html
 
 cmd/server/migrations/migrate
 cmd/client/filestorage/*
+cmd/server/filebank/*

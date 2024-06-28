@@ -201,7 +201,7 @@ func (p *PgStorage) GetEntityListByType(ctx context.Context, etype string, userI
 	defer rows.Close()
 
 	var id int32
-	var title, value string
+	var title, value sql.NullString
 	var list = make(map[int32][]string)
 	for rows.Next() {
 		err := rows.Scan(&id, &title, &value)
@@ -209,7 +209,7 @@ func (p *PgStorage) GetEntityListByType(ctx context.Context, etype string, userI
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
 
-		list[id] = append(list[id], title+":"+value)
+		list[id] = append(list[id], title.String+":"+value.String)
 	}
 
 	return list, nil

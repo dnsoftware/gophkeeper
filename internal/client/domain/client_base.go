@@ -1,7 +1,9 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
+	"path"
 	"strconv"
 )
 
@@ -137,7 +139,15 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 							if err != nil || id <= 0 {
 								return WorkAgain, err
 							}
-							fmt.Println("Данные успешно сохранены!")
+
+							// Если бинарные данные - после заведения записи на сервере загружаем бинарник на сервер
+							size, err := c.Sender.UploadCryptoBinary(id, entity.Props[0].Value)
+							if err != nil {
+								fmt.Println("При сохранении возникли ошибки:" + err.Error())
+								return WorkAgain, err
+							}
+
+							fmt.Println(fmt.Sprintf("Данные успешно сохранены! Загружен файл размером %v байт", size))
 							return WorkAgain, nil
 						case "2":
 							return WorkAgain, nil
@@ -187,12 +197,24 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 					fmt.Println("Неверный номер!")
 					continue
 				}
+
 				ent, err := c.Sender.Entity(mapIndexToEntityID[eID])
+				// Если бинарные данные - скачиваем файл
+				fd := &BinaryFileProperty{}
+				err = json.Unmarshal([]byte(ent.Props[0].Value), fd)
+
+				pathDownload, err := c.Sender.DownloadCryptoBinary(int32(eID), path.Base(fd.Clientname))
 				if err != nil {
 					fmt.Println(err.Error())
 					continue
 				}
-				c.DisplayEntity(*ent)
+				ent.Props[0].Value = pathDownload
+
+				if err != nil {
+					fmt.Println(err.Error())
+					continue
+				}
+				c.DisplayEntityBinary(*ent, pathDownload)
 
 				for {
 					fmt.Println("")
