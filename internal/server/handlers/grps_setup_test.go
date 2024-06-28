@@ -113,7 +113,7 @@ func getTestsCertDir() string {
 	sep := "internal"
 	parts := strings.Split(path, sep)
 
-	return parts[0] + sep + "/certs"
+	return parts[0] + "cmd/server/certs"
 }
 
 func clientTLSCreds() (credentials.TransportCredentials, error) {

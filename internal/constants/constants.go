@@ -60,8 +60,8 @@ const (
 // сообщения об ошибках
 const (
 	ErrPasswordsNotMatch string = "пароли не совпадают"
-	ErrBadPassword       string = "bad password"
-	ErrNoSuchUser        string = "no such user"
+	ErrBadPassword       string = "неправильный пароль"
+	ErrNoSuchUser        string = "нет такого пользователя"
 )
 
 // Методы для которых не проверяем токен авторизации

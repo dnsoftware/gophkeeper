@@ -77,10 +77,12 @@ func (t *GRPCSender) Registration(login string, password string, password2 strin
 	})
 
 	if err != nil {
+		logger.Log().Error(err.Error())
 		return "", err
 	}
 
 	if res.Error != "" {
+		logger.Log().Error(res.Error)
 		return "", fmt.Errorf(res.Error)
 	}
 

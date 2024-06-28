@@ -2,7 +2,6 @@ package app
 
 import (
 	"os"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -23,9 +22,7 @@ func ClientRun() {
 	logger.Log().Info("Client starting...")
 
 	path, _ := os.Getwd()
-	sep := "internal"
-	parts := strings.Split(path, sep)
-	certFile := parts[0] + "/" + sep + "/certs/ca.crt"
+	certFile := path + "/cert/ca.crt"
 
 	creds, err := credentials.NewClientTLSFromFile(certFile, "")
 	if err != nil {

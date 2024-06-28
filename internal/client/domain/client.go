@@ -5,9 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/chzyer/readline"
 )
@@ -133,7 +130,7 @@ func (c *GophKeepClient) Start() {
 
 		token, err = c.Sender.Registration(login, password, password)
 		if err != nil {
-			c.rl.Writeln(err.Error())
+			c.rl.Writeln("Sender.Registration: " + err.Error())
 			continue
 		}
 
@@ -186,84 +183,16 @@ func (c *GophKeepClient) Start() {
 			fmt.Println(err.Error())
 		}
 
-		switch status {
-		case "again":
+		if status == WorkAgain {
 			continue
-		case "stop":
+		}
+
+		if status == WorkStop {
 			break
 		}
 	}
 
-	for {
-		line, err := c.rl.Readline()
-		if err == readline.ErrInterrupt {
-			if len(line) == 0 {
-				break
-			} else {
-				continue
-			}
-		} else if err == io.EOF {
-			break
-		}
-
-		line = strings.TrimSpace(line)
-		switch {
-		case strings.HasPrefix(line, "mode "):
-			switch line[5:] {
-			case "vi":
-				c.rl.SetVimMode(true)
-			case "emacs":
-				c.rl.SetVimMode(false)
-			default:
-				println("invalid mode:", line[5:])
-			}
-		case line == "mode":
-			if c.rl.IsVimMode() {
-				println("current mode: vim")
-			} else {
-				println("current mode: emacs")
-			}
-		case line == "login":
-			pswd, err := c.rl.ReadPassword("please enter your password: ")
-			if err != nil {
-				break
-			}
-			println("you enter:", strconv.Quote(string(pswd)))
-		case line == "help":
-			usage(c.rl.Stderr())
-		case line == "setpassword":
-			pswd, err := c.rl.ReadPasswordWithConfig(c.rl.passwordCfg)
-			if err == nil {
-				println("you set:", strconv.Quote(string(pswd)))
-			}
-		case strings.HasPrefix(line, "setprompt"):
-			if len(line) <= 10 {
-				log.Println("setprompt <prompt>")
-				break
-			}
-			c.rl.SetPrompt(line[10:])
-		case strings.HasPrefix(line, "say"):
-			line := strings.TrimSpace(line[3:])
-			if len(line) == 0 {
-				log.Println("say what?")
-				break
-			}
-			go func() {
-				for range time.Tick(time.Second) {
-					log.Println(line)
-				}
-			}()
-		case line == "bye":
-			goto exit
-		case line == "sleep":
-			log.Println("sleep 4 second")
-			time.Sleep(4 * time.Second)
-		case line == "":
-		default:
-			log.Println("you said:", strconv.Quote(line))
-		}
-	}
-exit:
+	//exit:
 }
 
 // DisplayEntity отобразить сущность в консоли

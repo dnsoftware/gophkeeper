@@ -32,7 +32,7 @@ func NewCLIReadline(cfg *readline.Config) (*CLIReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	rl.CaptureExitSignal()
+	//rl.CaptureExitSignal()
 
 	passwordCfg := rl.GenPasswordConfig()
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
@@ -79,10 +79,8 @@ func (r *CLIReader) Registration() (string, string, error) {
 	for {
 		pswd, err = r.ReadPasswordWithConfig(r.passwordCfg)
 
-		if ir := r.interrupt(string(pswd), err); ir == loopBreak {
+		if r.interrupt(string(pswd), err) == loopBreak {
 			return "", "", fmt.Errorf("interrupt")
-		} else if ir == loopContinue {
-			continue
 		}
 
 		if len(pswd) == 0 {
@@ -119,10 +117,8 @@ func (r *CLIReader) Login() (string, string, error) {
 		var err error
 		login, err = r.Readline()
 
-		if ir := r.interrupt(login, err); ir == loopBreak {
+		if r.interrupt(login, err) == loopBreak {
 			return "", "", fmt.Errorf("interrupt")
-		} else if ir == loopContinue {
-			continue
 		}
 
 		login = strings.TrimSpace(login)
@@ -143,10 +139,8 @@ func (r *CLIReader) Login() (string, string, error) {
 		pswd, err := r.ReadPasswordWithConfig(r.passwordCfg)
 		password = string(pswd)
 
-		if ir := r.interrupt(password, err); ir == loopBreak {
+		if r.interrupt(password, err) == loopBreak {
 			return "", "", fmt.Errorf("interrupt")
-		} else if ir == loopContinue {
-			continue
 		}
 
 		password = strings.TrimSpace(password)
@@ -184,10 +178,8 @@ func (r *CLIReader) input(prompt string, validateRules string, validateMessages 
 		r.SetPrompt(prompt)
 		value, err = r.Readline()
 
-		if ir := r.interrupt(value, err); ir == loopBreak {
-			return "", fmt.Errorf("interrupt")
-		} else if ir == loopContinue {
-			continue
+		if r.interrupt(value, err) == loopBreak {
+			return "", readline.ErrInterrupt
 		}
 
 		if err != nil {

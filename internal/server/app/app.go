@@ -24,47 +24,41 @@ import (
 func ServerRun() error {
 	cfg, err := config.NewServerConfig()
 	if err != nil {
-		logger.Log().Fatal(err.Error())
+		logger.Log().Fatal("NewServerConfig: " + err.Error())
 	}
 	logger.Log().Info("Server starting...")
 
 	// миграции
 	path, _ := os.Getwd()
-
-	m, err := migrate.New(
-		"file://"+path+"/cmd/server/migrations",
-		cfg.DatabaseDSN)
+	m, err := migrate.New("file://"+path+"/migrations", cfg.DatabaseDSN)
 	if err != nil {
-		logger.Log().Fatal(err.Error())
+		logger.Log().Fatal("migrate.New: " + err.Error())
 	} else {
 		err = m.Up()
 		if err != nil && err.Error() != "no change" {
-			logger.Log().Error(err.Error())
+			logger.Log().Error("migrate.New else: " + err.Error())
 		}
-
 	}
-
-	//repo, err = storage.NewPostgresqlStorage(cfg.DatabaseDSN)
 
 	// grpc server
 	listen, err := net.Listen("tcp", cfg.ServerAddress)
 	if err != nil {
-		logger.Log().Fatal(err.Error())
+		logger.Log().Fatal("net.Listen: " + err.Error())
 	}
 
 	repository, err := postgresql.NewPostgresqlStorage(cfg.DatabaseDSN)
 	if err != nil {
-		logger.Log().Fatal(err.Error())
+		logger.Log().Fatal("NewPostgresqlStorage: " + err.Error())
 	}
 
 	userService, err := user.NewUser(repository)
 	if err != nil {
-		logger.Log().Fatal(err.Error())
+		logger.Log().Fatal("user.NewUser: " + err.Error())
 	}
 
 	entityCodeService, err := entity_code.NewEntityCode(repository)
 	if err != nil {
-		logger.Log().Fatal(err.Error())
+		logger.Log().Fatal("NewEntityCode: " + err.Error())
 	}
 	fieldService, _ := field.NewField(repository)
 	entityService, _ := entity.NewEntity(repository, repository)

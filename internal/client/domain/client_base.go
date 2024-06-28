@@ -24,6 +24,9 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	var err error
 	for {
 		objStr, err = c.rl.input("Выберите номер объекта:", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
+		if c.rl.interrupt(objStr, err) == loopBreak {
+			return WorkStop, err
+		}
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
@@ -36,6 +39,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	fmt.Println(fmt.Sprintf(`Для объекта "%v" доступны следующие действия:`, entCode.Name))
 	fmt.Println("[1] Добавить новый")
 	fmt.Println("[2] Получить сохраненный")
+	fmt.Println("[0] Начать сначала")
 	var doStr string
 	for {
 		for {
@@ -81,6 +85,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 				fmt.Println("Выберите дальнейшее действие:")
 				fmt.Println("[1] Добавить метаданные")
 				fmt.Println("[2] Перейти к сохранению")
+				fmt.Println("[0] Начать сначала")
 				addOrNext, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 				if err != nil {
 					fmt.Println(err.Error())
@@ -113,6 +118,9 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 				case "2":
 					nextTag = true
 					break
+				case "0":
+					return WorkAgain, nil
+
 				default:
 					continue
 				}
@@ -128,7 +136,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 						fmt.Println("")
 						fmt.Println("Выберите дальнейшее действие:")
 						fmt.Println("[1] Сохранить")
-						fmt.Println("[2] Начать заново")
+						fmt.Println("[0] Начать заново")
 						againOrSave, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 						if err != nil {
 							fmt.Println(err.Error())
@@ -155,18 +163,15 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 							}
 
 							return WorkAgain, nil
-						case "2":
+						case "0":
 							return WorkAgain, nil
 						default:
 							continue
 						}
 					}
 
-					break
 				}
 			}
-
-			break
 
 		// Просмотр сохраненной сущности, получаем список для дальнейшего выбора
 		case "2":
@@ -260,6 +265,8 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 				}
 
 			}
+		case "0":
+			return WorkAgain, nil
 
 		default:
 			fmt.Println("Неверный выбор!")
