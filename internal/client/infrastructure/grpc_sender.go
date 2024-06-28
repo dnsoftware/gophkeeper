@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -399,6 +400,47 @@ func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (stri
 	return uploadFile, nil
 }
 
+func (t *GRPCSender) Entity(id int32) (*domain.Entity, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
+
+	resp, err := t.KeeperClient.Entity(ctx, &pb.EntityRequest{Id: id})
+	if err != nil {
+		return nil, err
+	}
+
+	userID := utils.GetUserID(t.token)
+
+	props := make([]*domain.Property, 0, len(resp.Props))
+	meta := make([]*domain.Metainfo, 0, len(resp.Metainfo))
+
+	for _, val := range resp.Props {
+		props = append(props, &domain.Property{
+			EntityId: val.EntityId,
+			FieldId:  val.FieldId,
+			Value:    val.Value,
+		})
+	}
+
+	for _, val := range resp.Metainfo {
+		meta = append(meta, &domain.Metainfo{
+			EntityId: val.EntityId,
+			Title:    val.Title,
+			Value:    val.Value,
+		})
+	}
+
+	ent := &domain.Entity{
+		Id:       id,
+		UserID:   int32(userID),
+		Etype:    resp.Etype,
+		Props:    props,
+		Metainfo: meta,
+	}
+
+	return ent, nil
+}
+
 func (t *GRPCSender) GetToken() string {
 	return t.token
 }
@@ -447,4 +489,39 @@ func (t *GRPCSender) Start() {
 		println(cmd)
 	}
 
+}
+
+func (t *GRPCSender) EntityList(etype string) (map[int32]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
+
+	var opts []grpc.CallOption
+	in := &pb.EntityListRequest{Etype: etype}
+
+	resp, err := t.KeeperClient.EntityList(ctx, in, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	cryptoKey := utils.SymmPassCreate(t.password, t.SecretKey)
+
+	list := make(map[int32]string, len(resp.List))
+	for key, val := range resp.List {
+		m := make(map[string]string)
+		err := json.Unmarshal([]byte(val), &m)
+		if err != nil {
+			return nil, err
+		}
+
+		str := ""
+		for ek, ev := range m {
+			k := utils.Decrypt(ek, cryptoKey)
+			v := utils.Decrypt(ev, cryptoKey)
+			str = str + k + ":" + v + ". "
+		}
+
+		list[key] = str
+	}
+
+	return list, nil
 }

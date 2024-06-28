@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 )
 
 func Encrypt(plaintext string, secretKey string) string {
@@ -36,7 +37,10 @@ func Encrypt(plaintext string, secretKey string) string {
 
 func Decrypt(ciphertext string, secretKey string) string {
 
-	temp, _ := hex.DecodeString(ciphertext)
+	temp, err := hex.DecodeString(ciphertext)
+	if err != nil {
+		fmt.Println(err)
+	}
 	ciphertext = string(temp)
 
 	aes, err := aes.NewCipher([]byte(secretKey))

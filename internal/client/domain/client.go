@@ -23,6 +23,8 @@ type Sender interface {
 	DownloadBinary(entityId int32, fileName string) (string, error)
 	UploadCryptoBinary(entityId int32, file string) (int32, error)
 	DownloadCryptoBinary(entityId int32, fileName string) (string, error)
+	EntityList(etype string) (map[int32]string, error)
+	Entity(id int32) (*Entity, error)
 }
 
 type Entity struct {
@@ -63,6 +65,11 @@ type GophKeepClient struct {
 	rl     *CLIReader
 	Sender Sender
 }
+
+const (
+	WorkAgain string = "again"
+	WorkStop  string = "stop"
+)
 
 func NewGophKeepClient(sender Sender) (*GophKeepClient, error) {
 
@@ -146,6 +153,7 @@ func (c *GophKeepClient) Start() {
 
 	// Инициализация списка сущностей, с которыми можно работать
 	entCodes, err := c.Sender.EntityCodes()
+
 	if err != nil {
 		c.rl.Writeln(fmt.Sprintf("Ошибка загрузки сущностей: %v", err))
 	}
@@ -164,153 +172,18 @@ func (c *GophKeepClient) Start() {
 
 	/************** Основная логика ************/
 
-STARTWORK:
-
-	c.rl.Writeln("")
-	c.rl.Writeln("Доступна работа со следующими объектами:")
-	for i, val := range entCodes {
-		c.rl.Writeln(fmt.Sprintf("[%v] %v", i+1, val.Name))
-	}
-
-	var objStr string
 	for {
-		objStr, err = c.rl.input("Выберите номер объекта:", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
+		status, err := c.Base(entCodes)
 		if err != nil {
-			c.rl.Writeln(err.Error())
-			continue
+			fmt.Println(err.Error())
 		}
-		break
-	}
-	objIndex, _ := strconv.Atoi(objStr)
-	entCode := entCodes[objIndex-1]
-	c.rl.Writeln("")
-	c.rl.Writeln(fmt.Sprintf(`Для объекта "%v" доступны следующие действия:`, entCode.Name))
-	c.rl.Writeln("[1] Добавить новый")
-	c.rl.Writeln("[2] Получить сохраненный")
-	var doStr string
-	for {
-		for {
-			doStr, err = c.rl.input(">>", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
-			if err != nil {
-				c.rl.Writeln(err.Error())
-				continue
-			}
+
+		switch status {
+		case "again":
+			continue
+		case "stop":
 			break
 		}
-
-		switch doStr {
-		// Добавление сущности, поочередно вводим данные в поля
-		case "1":
-			var props []*Property
-			var metas []*Metainfo
-			entity := Entity{
-				Id:       0,
-				UserID:   0,
-				Etype:    entCode.Etype,
-				Props:    nil,
-				Metainfo: nil,
-			}
-
-			// Заполняем обязательные поля
-			for _, val := range c.rl.fieldsGroup[entCode.Etype] {
-				fieldData, err := c.rl.input(val.Name+":", val.ValidateRules, val.ValidateMessages)
-				if err != nil {
-					c.rl.Writeln(err.Error())
-					continue
-				}
-				props = append(props, &Property{
-					EntityId: 0,
-					FieldId:  val.Id,
-					Value:    fieldData,
-				})
-			}
-			// Заполняем поля метаданных
-			// Добавить или перейти дальше
-			nextTag := false
-			for {
-				c.rl.Writeln("")
-				c.rl.Writeln("Выберите дальнейшее действие:")
-				c.rl.Writeln("[1] Добавить метаданные")
-				c.rl.Writeln("[2] Перейти к сохранению")
-				addOrNext, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
-				if err != nil {
-					c.rl.Writeln(err.Error())
-					continue
-				}
-
-				switch addOrNext {
-				case "1":
-					for {
-						metaName, err := c.rl.input("Название поля метаданных:", "required", `{"required": "Укажите название поля метаданных"}`)
-						if err != nil {
-							c.rl.Writeln(err.Error())
-							continue
-						}
-
-						metaValue, err := c.rl.input("Значение поля метаданных:", "required", `{"required": "Укажите значение поля метаданных"}`)
-						if err != nil {
-							c.rl.Writeln(err.Error())
-							continue
-						}
-
-						metas = append(metas, &Metainfo{
-							EntityId: 0,
-							Title:    metaName,
-							Value:    metaValue,
-						})
-
-						break
-					}
-				case "2":
-					nextTag = true
-					break
-				default:
-					continue
-				}
-
-				if nextTag {
-					entity.Props = props
-					entity.Metainfo = metas
-
-					// Просмотр и сохранение
-					c.DisplayEntity(entity)
-
-					for {
-						c.rl.Writeln("")
-						c.rl.Writeln("Выберите дальнейшее действие:")
-						c.rl.Writeln("[1] Начать заново")
-						c.rl.Writeln("[2] Сохранить")
-						againOrSave, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
-						if err != nil {
-							c.rl.Writeln(err.Error())
-							continue
-						}
-
-						switch againOrSave {
-						case "1":
-							goto STARTWORK
-						case "2":
-							fmt.Println("сохранить")
-						default:
-							continue
-						}
-					}
-
-					break
-				}
-			}
-
-			break
-
-		// Просмотр сохраненной сущности, получаем список для дальнейшего выбора
-		case "2":
-
-		default:
-			c.rl.Writeln("Неверный выбор!")
-			continue
-		}
-
-		break
 	}
 
 	for {

@@ -18,6 +18,7 @@ const (
 	FileBankDir   string = "filebank"    // папка в которой хранятся файлы пользователей на сервере
 	ChunkSize     int    = 10240         // chunk size для потоковой передачи бинарных данных
 	FileStorage   string = "filestorage" // папка куда скачиваются файлы пользователя на клиента
+	UserUD        string = "userID"      // идентификатор кода пользователя в GRPC контексте сервера
 )
 
 // типы сущностей

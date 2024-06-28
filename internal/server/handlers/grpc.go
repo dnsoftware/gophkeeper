@@ -39,6 +39,8 @@ type EntityService interface {
 	AddEntity(ctx context.Context, entity entity.EntityModel) (int32, error)
 	// Entity Получить сущность
 	Entity(ctx context.Context, id int32) (*entity.EntityModel, error)
+	// EntityList Список сущностей определенного типа для пользователя
+	EntityList(ctx context.Context, etype string, userID int32) (map[int32]string, error)
 
 	// UploadBinary потоковая загрузка бинарного файла
 	UploadBinary(stream pb.Keeper_UploadBinaryServer) (int32, error)

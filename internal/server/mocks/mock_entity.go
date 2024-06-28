@@ -80,6 +80,21 @@ func (mr *MockEntityRepoMockRecorder) GetEntity(ctx, id interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntity", reflect.TypeOf((*MockEntityRepo)(nil).GetEntity), ctx, id)
 }
 
+// GetEntityListByType mocks base method.
+func (m *MockEntityRepo) GetEntityListByType(ctx context.Context, etype string, userID int32) (map[int32][]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEntityListByType", ctx, etype, userID)
+	ret0, _ := ret[0].(map[int32][]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEntityListByType indicates an expected call of GetEntityListByType.
+func (mr *MockEntityRepoMockRecorder) GetEntityListByType(ctx, etype, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntityListByType", reflect.TypeOf((*MockEntityRepo)(nil).GetEntityListByType), ctx, etype, userID)
+}
+
 // SetChunkCountForCryptoBinary mocks base method.
 func (m *MockEntityRepo) SetChunkCountForCryptoBinary(ctx context.Context, entityID, chunkCount int32) error {
 	m.ctrl.T.Helper()

@@ -146,6 +146,15 @@ message DownloadBinResponse {
   bytes chunk_data = 1;    // chunk
 }
 
+// Получение списка сущностей пользователя определенного типа
+message EntityListRequest {
+  string etype = 1;               // тип сущности: card, text, logopas, binary и т.д.
+}
+
+message EntityListResponse {
+  map<int32, string> list = 1; // карта: код_сущности:строка_с_описанием
+}
+
 /****************************************************/
 
 service Keeper {
@@ -165,4 +174,5 @@ service Keeper {
   rpc DownloadBinary(DownloadBinRequest) returns (stream DownloadBinResponse);
   rpc DownloadCryptoBinary(DownloadBinRequest) returns (stream DownloadBinResponse);
 
+  rpc EntityList(EntityListRequest) returns (EntityListResponse);
 }

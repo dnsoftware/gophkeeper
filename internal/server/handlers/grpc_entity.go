@@ -14,16 +14,7 @@ import (
 
 func (g *GRPCServer) AddEntity(ctx context.Context, in *pb.AddEntityRequest) (*pb.AddEntityResponse, error) {
 
-	var token string
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		values := md.Get("token")
-		if len(values) > 0 {
-			// ключ содержит слайс строк, получаем первую строку
-			token = values[0]
-		}
-	}
-	userID := utils.GetUserID(token)
+	userID := getContextUserID(ctx)
 
 	var props = make([]entity.Property, 0, len(in.Props))
 	for _, val := range in.Props {
@@ -135,4 +126,36 @@ func (g *GRPCServer) DownloadCryptoBinary(in *pb.DownloadBinRequest, stream pb.K
 	}
 
 	return nil
+}
+
+// EntityList Получение списка сущностей указанного типа для конкретного пользователя
+// Простая карта с кодом сущности и названием(составляется из метаданных)
+func (g *GRPCServer) EntityList(ctx context.Context, in *pb.EntityListRequest) (*pb.EntityListResponse, error) {
+	userID := getContextUserID(ctx)
+
+	list, err := g.svs.EntityService.EntityList(ctx, in.Etype, int32(userID))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.EntityListResponse{
+		List: list,
+	}, nil
+}
+
+func getContextUserID(ctx context.Context) int {
+	var token string
+	var userID int
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		values := md.Get("token")
+		if len(values) > 0 {
+			// ключ содержит слайс строк, получаем первую строку
+			token = values[0]
+			userID = utils.GetUserID(token)
+		}
+	}
+
+	return userID
 }

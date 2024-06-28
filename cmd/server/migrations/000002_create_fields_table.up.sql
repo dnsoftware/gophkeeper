@@ -4,8 +4,8 @@ CREATE TABLE fields
     etype CHARACTER VARYING(64),
     name CHARACTER VARYING(256),
     ftype CHARACTER VARYING(64),
-    validate_rules CHARACTER VARYING(512),
-    validate_messages CHARACTER VARYING(512)
+    validate_rules CHARACTER VARYING(1024),
+    validate_messages CHARACTER VARYING(1024)
 
 );
 

@@ -128,6 +128,7 @@ func (p *PgStorage) GetEntity(ctx context.Context, id int32) (entity.EntityModel
 	return ent, nil
 }
 
+// GetBinaryFilenameByEntityID Получение данных по именам файлов хранения бинарных данных
 func (p *PgStorage) GetBinaryFilenameByEntityID(ctx context.Context, entityID int32) (string, error) {
 	query := "SELECT p.value FROM entities e, properties p WHERE e.id = $1 AND e.id = p.entity_id LIMIT 1"
 	var filename string
@@ -150,6 +151,7 @@ type BinaryFileDataProperty struct {
 	Chunkcount int32  `json:"chunkcount"`
 }
 
+// SetChunkCountForCryptoBinary Сохранение кол-ва фрагментов, на которые разбит бинарный файл
 func (p *PgStorage) SetChunkCountForCryptoBinary(ctx context.Context, entityID int32, chunkCount int32) error {
 	query := "SELECT p.id property_id, p.value FROM entities e, properties p WHERE e.id = $1 AND e.id = p.entity_id LIMIT 1"
 	var filedata string
@@ -183,4 +185,32 @@ func (p *PgStorage) SetChunkCountForCryptoBinary(ctx context.Context, entityID i
 	}
 
 	return nil
+}
+
+// GetEntityListByType Получение списка сущностей указанного типа для конкретного пользователя
+// Простая карта с кодом сущности и названием(составляется из метаданных)
+func (p *PgStorage) GetEntityListByType(ctx context.Context, etype string, userID int32) (map[int32][]string, error) {
+
+	query := `SELECT e.id, m.title, m.value FROM entities e LEFT JOIN metainfo m 
+                        ON e.id = m.entity_id
+                        WHERE e.etype = $1 AND e.user_id = $2`
+	rows, err := p.db.QueryContext(ctx, query, etype, userID)
+	if err != nil {
+		return nil, fmt.Errorf("query error: %w", err)
+	}
+	defer rows.Close()
+
+	var id int32
+	var title, value string
+	var list = make(map[int32][]string)
+	for rows.Next() {
+		err := rows.Scan(&id, &title, &value)
+		if err != nil {
+			return nil, fmt.Errorf("scan error: %w", err)
+		}
+
+		list[id] = append(list[id], title+":"+value)
+	}
+
+	return list, nil
 }

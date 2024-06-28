@@ -3,7 +3,7 @@ CREATE TABLE properties
     id SERIAL PRIMARY KEY,
     entity_id INTEGER,
     field_id INTEGER,
-    value CHARACTER VARYING(256)
+    value CHARACTER VARYING(1024)
 
 );
 

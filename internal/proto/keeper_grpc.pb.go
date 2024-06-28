@@ -30,6 +30,7 @@ const (
 	Keeper_Entity_FullMethodName               = "/proto.Keeper/Entity"
 	Keeper_DownloadBinary_FullMethodName       = "/proto.Keeper/DownloadBinary"
 	Keeper_DownloadCryptoBinary_FullMethodName = "/proto.Keeper/DownloadCryptoBinary"
+	Keeper_EntityList_FullMethodName           = "/proto.Keeper/EntityList"
 )
 
 // KeeperClient is the client API for Keeper service.
@@ -47,6 +48,7 @@ type KeeperClient interface {
 	Entity(ctx context.Context, in *EntityRequest, opts ...grpc.CallOption) (*EntityResponse, error)
 	DownloadBinary(ctx context.Context, in *DownloadBinRequest, opts ...grpc.CallOption) (Keeper_DownloadBinaryClient, error)
 	DownloadCryptoBinary(ctx context.Context, in *DownloadBinRequest, opts ...grpc.CallOption) (Keeper_DownloadCryptoBinaryClient, error)
+	EntityList(ctx context.Context, in *EntityListRequest, opts ...grpc.CallOption) (*EntityListResponse, error)
 }
 
 type keeperClient struct {
@@ -252,6 +254,15 @@ func (x *keeperDownloadCryptoBinaryClient) Recv() (*DownloadBinResponse, error) 
 	return m, nil
 }
 
+func (c *keeperClient) EntityList(ctx context.Context, in *EntityListRequest, opts ...grpc.CallOption) (*EntityListResponse, error) {
+	out := new(EntityListResponse)
+	err := c.cc.Invoke(ctx, Keeper_EntityList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KeeperServer is the server API for Keeper service.
 // All implementations must embed UnimplementedKeeperServer
 // for forward compatibility
@@ -267,6 +278,7 @@ type KeeperServer interface {
 	Entity(context.Context, *EntityRequest) (*EntityResponse, error)
 	DownloadBinary(*DownloadBinRequest, Keeper_DownloadBinaryServer) error
 	DownloadCryptoBinary(*DownloadBinRequest, Keeper_DownloadCryptoBinaryServer) error
+	EntityList(context.Context, *EntityListRequest) (*EntityListResponse, error)
 	mustEmbedUnimplementedKeeperServer()
 }
 
@@ -306,6 +318,9 @@ func (UnimplementedKeeperServer) DownloadBinary(*DownloadBinRequest, Keeper_Down
 }
 func (UnimplementedKeeperServer) DownloadCryptoBinary(*DownloadBinRequest, Keeper_DownloadCryptoBinaryServer) error {
 	return status.Errorf(codes.Unimplemented, "method DownloadCryptoBinary not implemented")
+}
+func (UnimplementedKeeperServer) EntityList(context.Context, *EntityListRequest) (*EntityListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EntityList not implemented")
 }
 func (UnimplementedKeeperServer) mustEmbedUnimplementedKeeperServer() {}
 
@@ -540,6 +555,24 @@ func (x *keeperDownloadCryptoBinaryServer) Send(m *DownloadBinResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Keeper_EntityList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EntityListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KeeperServer).EntityList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Keeper_EntityList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KeeperServer).EntityList(ctx, req.(*EntityListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Keeper_ServiceDesc is the grpc.ServiceDesc for Keeper service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -574,6 +607,10 @@ var Keeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Entity",
 			Handler:    _Keeper_Entity_Handler,
+		},
+		{
+			MethodName: "EntityList",
+			Handler:    _Keeper_EntityList_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

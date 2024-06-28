@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,6 +25,7 @@ type EntityRepo interface {
 	GetEntity(ctx context.Context, id int32) (EntityModel, error)
 	GetBinaryFilenameByEntityID(ctx context.Context, entityID int32) (string, error)
 	SetChunkCountForCryptoBinary(ctx context.Context, entityID int32, chunkCount int32) error
+	GetEntityListByType(ctx context.Context, etype string, userID int32) (map[int32][]string, error)
 }
 
 type FieldRepo interface {
@@ -357,4 +359,24 @@ func (e *Entity) DownloadCryptoBinary(entityID int32, stream pb.Keeper_DownloadC
 	}
 
 	return nil
+}
+
+// EntityList Получение списка сущностей указанного типа для конкретного пользователя
+// Простая карта с кодом сущности и названием(составляется из метаданных)
+func (e *Entity) EntityList(ctx context.Context, etype string, userID int32) (map[int32]string, error) {
+
+	list, err := e.repoEntity.GetEntityListByType(ctx, etype, userID)
+
+	data := make(map[int32]string, len(list))
+	for key, val := range list {
+		a := make(map[string]string)
+		for _, v := range val {
+			parts := strings.Split(v, ":")
+			a[parts[0]] = parts[1]
+		}
+		meta, _ := json.Marshal(a)
+		data[key] = string(meta)
+	}
+
+	return data, err
 }

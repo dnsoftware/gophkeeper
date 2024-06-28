@@ -427,3 +427,104 @@ func TestAddCryptoBinary(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, downloadFile)
 }
+
+// TestEntityList получение списка сущностей пользователя определенного типа
+func TestEntityList(t *testing.T) {
+
+	ctx := context.Background()
+
+	client, conn, err := setupFull(cfg, cfgClient)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// регистрируем пользователя
+	login := "username"
+	password := "userpass"
+	_, err = client.Registration(login, password, password)
+	require.NoError(t, err)
+
+	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
+	token, err := client.Login(login, password)
+	md := metadata.New(map[string]string{"token": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	// добавление логина/пароля
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
+
+	props = append(props,
+		&domain.Property{
+			FieldId: 1,
+			Value:   "login",
+		},
+		&domain.Property{
+			FieldId: 2,
+			Value:   "password",
+		})
+
+	metainfo = append(metainfo,
+		&domain.Metainfo{
+			Title: "Сайт",
+			Value: "gopher.ru",
+		},
+		&domain.Metainfo{
+			Title: "Куда",
+			Value: "В админку например",
+		})
+
+	entreq := domain.Entity{
+		Id:       0,
+		Etype:    constants.LogopasEntity,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
+	idEnt, err := client.AddEntity(entreq)
+	require.NoError(t, err)
+	require.Greater(t, idEnt, int32(0))
+
+	props = nil
+	metainfo = nil
+
+	props = append(props,
+		&domain.Property{
+			FieldId: 1,
+			Value:   "login2",
+		},
+		&domain.Property{
+			FieldId: 2,
+			Value:   "password2",
+		})
+
+	metainfo = append(metainfo,
+		&domain.Metainfo{
+			Title: "Сайт",
+			Value: "elephant.ru",
+		},
+		&domain.Metainfo{
+			Title: "Куда",
+			Value: "В админку",
+		})
+
+	entreq = domain.Entity{
+		Id:       0,
+		Etype:    constants.LogopasEntity,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
+	idEnt, err = client.AddEntity(entreq)
+	require.NoError(t, err)
+	require.Greater(t, idEnt, int32(0))
+
+	req := &pb.EntityRequest{
+		Id: idEnt,
+	}
+	ent, err := client.Entity(ctx, req)
+	_ = ent
+
+	// Получаем список
+	list, err := client.EntityList("logopas")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(list))
+}

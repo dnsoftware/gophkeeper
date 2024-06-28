@@ -17,8 +17,8 @@ VALUES ('card', 'Номер банковской карты', 'string', 'credit_
 
 /* text */
 INSERT INTO fields (etype, name, ftype, validate_rules, validate_messages)
-VALUES ('text', 'Произвольные текстовые данные', 'path', 'required,file', '{"requred": "Путь к файлу не может быть пустым", "file": "Файла не существует"}');
+VALUES ('text', 'Произвольные текстовые данные (путь к файлу)', 'path', 'required,file', '{"requred": "Путь к файлу не может быть пустым", "file": "Файла не существует"}');
 
 /* binary */
 INSERT INTO fields (etype, name, ftype, validate_rules, validate_messages)
-VALUES ('binary', 'Произвольные бинарные данные', 'path', 'required,file', '{"required": "Путь к файлу не может быть пустым", "file": "Файла не существует"}');
+VALUES ('binary', 'Произвольные бинарные данные (путь к файлу)', 'path', 'required,file', '{"required": "Путь к файлу не может быть пустым", "file": "Файла не существует"}');
