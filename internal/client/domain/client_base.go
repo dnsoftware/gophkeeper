@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+
+	"github.com/dnsoftware/gophkeeper/internal/constants"
 )
 
 func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
@@ -140,14 +142,18 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 								return WorkAgain, err
 							}
 
-							// Если бинарные данные - после заведения записи на сервере загружаем бинарник на сервер
-							size, err := c.Sender.UploadCryptoBinary(id, entity.Props[0].Value)
-							if err != nil {
-								fmt.Println("При сохранении возникли ошибки:" + err.Error())
-								return WorkAgain, err
+							if entCode.Etype == constants.BinaryEntity || entCode.Etype == constants.TextEntity {
+								// Если бинарные данные - после заведения записи на сервере загружаем бинарник на сервер
+								size, err := c.Sender.UploadCryptoBinary(id, entity.Props[0].Value)
+								if err != nil {
+									fmt.Println("При сохранении возникли ошибки:" + err.Error())
+									return WorkAgain, err
+								}
+								fmt.Println(fmt.Sprintf("Данные успешно сохранены! Загружен файл размером %v байт", size))
+							} else {
+								fmt.Println(fmt.Sprintf("Данные успешно сохранены!"))
 							}
 
-							fmt.Println(fmt.Sprintf("Данные успешно сохранены! Загружен файл размером %v байт", size))
 							return WorkAgain, nil
 						case "2":
 							return WorkAgain, nil
@@ -178,43 +184,56 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 				fmt.Println("")
 				fmt.Println(fmt.Sprintf("%v. Выберите номер объекта, данные которого хотите получить:", c.rl.etypes[entCode.Etype]))
 
+				// соответствие межну консольными номерами сущностей и реальными идентификаторами
 				index := 0
 				mapIndexToEntityID := make(map[int]int32, len(list))
-
 				for key, val := range list {
 					index++
 					fmt.Println(fmt.Sprintf("[%v] %v", index, val))
 					mapIndexToEntityID[index] = key
 				}
 
-				entityID, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+				entityIndex, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 				if err != nil {
 					fmt.Println(err.Error())
 					continue
 				}
-				eID, err := strconv.Atoi(entityID)
+				entIndex, err := strconv.Atoi(entityIndex)
 				if err != nil {
 					fmt.Println("Неверный номер!")
 					continue
 				}
 
-				ent, err := c.Sender.Entity(mapIndexToEntityID[eID])
-				// Если бинарные данные - скачиваем файл
-				fd := &BinaryFileProperty{}
-				err = json.Unmarshal([]byte(ent.Props[0].Value), fd)
+				entityID := mapIndexToEntityID[entIndex]
+				ent, err := c.Sender.Entity(entityID)
 
-				pathDownload, err := c.Sender.DownloadCryptoBinary(int32(eID), path.Base(fd.Clientname))
-				if err != nil {
-					fmt.Println(err.Error())
-					continue
-				}
-				ent.Props[0].Value = pathDownload
+				// Если бинарные данные или произвольный текст - скачиваем файл
+				if entCode.Etype == constants.BinaryEntity || entCode.Etype == constants.TextEntity {
+					fd := &BinaryFileProperty{}
+					err = json.Unmarshal([]byte(ent.Props[0].Value), fd)
+					if err != nil {
+						fmt.Println(err.Error())
+						continue
+					}
 
-				if err != nil {
-					fmt.Println(err.Error())
-					continue
+					pathDownload, err := c.Sender.DownloadCryptoBinary(entityID, path.Base(fd.Clientname))
+					if err != nil {
+						fmt.Println(err.Error())
+						continue
+					}
+					ent.Props[0].Value = pathDownload
+
+					if err != nil {
+						fmt.Println(err.Error())
+						continue
+					}
+					c.DisplayEntityBinary(*ent, pathDownload)
+
+				} else {
+
+					c.DisplayEntity(*ent)
+
 				}
-				c.DisplayEntityBinary(*ent, pathDownload)
 
 				for {
 					fmt.Println("")

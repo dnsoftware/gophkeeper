@@ -94,7 +94,7 @@ func (d *DataOutInterceptor) DataOutputInterceptor() grpc.UnaryClientInterceptor
 			case constants.MethodAddEntity:
 				entity := req.(*proto.AddEntityRequest)
 				for key, prop := range entity.Props {
-					if entity.Etype == constants.BinaryEntity { // название загружаемого файла не шифруем
+					if entity.Etype == constants.BinaryEntity || entity.Etype == constants.TextEntity { // название загружаемого файла не шифруем
 						entity.Props[key].Value = prop.Value
 					} else {
 						entity.Props[key].Value = utils.Encrypt(prop.Value, cryptoKey)
@@ -117,7 +117,7 @@ func (d *DataOutInterceptor) DataOutputInterceptor() grpc.UnaryClientInterceptor
 			case constants.MethodEntity:
 				entity := reply.(*proto.EntityResponse)
 				for key, prop := range entity.Props {
-					if entity.Etype == constants.BinaryEntity { // название файла не нуждается в расшифровке
+					if entity.Etype == constants.BinaryEntity || entity.Etype == constants.TextEntity { // название файла не нуждается в расшифровке
 						entity.Props[key].Value = prop.Value
 					} else {
 						entity.Props[key].Value = utils.Decrypt(prop.Value, cryptoKey)

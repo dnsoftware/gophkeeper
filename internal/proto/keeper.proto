@@ -103,6 +103,7 @@ message AddEntityRequest {
   string etype = 2;               // тип сущности: card, text, logopas, binary и т.д.
   repeated Property props = 3;    // массив значений свойств
   repeated Metainfo metainfo = 4; // массив значений метаинформации
+
 }
 
 // Ответ на запрос на добавление новой сущности
