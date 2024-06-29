@@ -1,0 +1,6 @@
+
+env: local                    # окружение (local, dev, prod)
+serverAddress: localhost:9090 # адрес:порт на которых работает сервер
+databaseDSN: ""
+sertificateKeyPath: ""
+privateKeyPath: ""

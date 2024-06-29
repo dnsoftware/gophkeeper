@@ -1,0 +1,7 @@
+CREATE TABLE entity_codes
+(
+    etype CHARACTER VARYING(64) PRIMARY KEY,
+    name CHARACTER VARYING(256)
+
+);
+
