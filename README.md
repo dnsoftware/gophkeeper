@@ -81,16 +81,24 @@
 
 ### Клиент
 cmd/client/ - папка с бинарным исполняемым файлом
+
 cmd/client/cert - самоподписанный корневой сертификат для клиента
+
 cmd/client/filestorage - сюда будут загружаться файлы с сервера
+
 cmd/client/testbinary - пара файлов для тестовых выгрузок-загрузок
+
 internal/client - код клиента
 
 ### Сервер
 cmd/server/ - папка с бинарным исполняемым файлом
+
 cmd/server/cert - SSL сертификаты
+
 cmd/server/filebank - хранилище файлов
+
 cmd/server/migrations - миграции базы данных
+
 internal/server - код сервера
 
 ## Детали реализации
