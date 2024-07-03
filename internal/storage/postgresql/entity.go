@@ -257,3 +257,45 @@ func (p *PgStorage) GetEntityListByType(ctx context.Context, etype string, userI
 
 	return list, nil
 }
+
+// DeleteEntity Удаление данных сущности из базы
+func (p *PgStorage) DeleteEntity(ctx context.Context, id int32, userID int32) error {
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	query := "DELETE FROM entities WHERE id = $1 AND user_id = $2 "
+	res, err := p.db.ExecContext(ctx, query, id, userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if rowsAffected > 0 {
+		queryProps := "DELETE FROM properties WHERE entity_id = $1"
+		_, err := p.db.ExecContext(ctx, queryProps, id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		queryMetas := "DELETE FROM metainfo WHERE entity_id = $1"
+		_, err = p.db.ExecContext(ctx, queryMetas, id)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+	}
+
+	tx.Commit()
+
+	return nil
+}

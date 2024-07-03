@@ -254,6 +254,20 @@ func (mr *MockSenderMockRecorder) AddEntity(ae interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEntity", reflect.TypeOf((*MockSender)(nil).AddEntity), ae)
 }
 
+// DeleteEntity mocks base method.
+func (m *MockSender) DeleteEntity(id int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEntity", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEntity indicates an expected call of DeleteEntity.
+func (mr *MockSenderMockRecorder) DeleteEntity(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEntity", reflect.TypeOf((*MockSender)(nil).DeleteEntity), id)
+}
+
 // DownloadBinary mocks base method.
 func (m *MockSender) DownloadBinary(entityId int32, fileName string) (string, error) {
 	m.ctrl.T.Helper()

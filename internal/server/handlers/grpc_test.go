@@ -657,3 +657,74 @@ func TestEntityList(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(list))
 }
+
+// Удаление сущности
+func TestDeleteEntity(t *testing.T) {
+	ctx := context.Background()
+
+	client, conn, err := setupFull(cfg, cfgClient)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// регистрируем пользователя
+	login := "username"
+	password := "userpass"
+	_, err = client.Registration(login, password, password)
+	require.NoError(t, err)
+
+	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
+	token, err := client.Login(login, password)
+	md := metadata.New(map[string]string{"token": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
+
+	p, _ := os.Getwd()
+	parts := strings.Split(p, "internal")
+	uploadFile := parts[0] + "cmd/client/testbinary/gopher.jpg"
+	onlyFilename := filepath.Base(uploadFile)
+
+	props = append(props,
+		&domain.Property{
+			FieldId: 7,
+			Value:   onlyFilename,
+		})
+
+	metainfo = append(metainfo,
+		&domain.Metainfo{
+			Title: "Название картинки",
+			Value: "Суслик в естественной среде обитания",
+		})
+
+	entreq := domain.Entity{
+		Id:       0,
+		Etype:    constants.BinaryEntity,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
+	idEnt, err := client.AddEntity(entreq)
+
+	require.NoError(t, err)
+	require.Greater(t, idEnt, int32(0))
+
+	// теперь после заведения записи на сервере загружаем бинарник на сервер
+	size, err := client.UploadCryptoBinary(idEnt, uploadFile)
+	require.NoError(t, err)
+	require.Greater(t, size, int32(0))
+
+	// получаем данные сущности
+	entBin, err := client.Entity(idEnt)
+	require.NoError(t, err)
+
+	// Удаляем
+	err = client.DeleteEntity(entBin.Id)
+	require.NoError(t, err)
+
+	// Пытаемся получить - должна быть ошибка
+	entBin, err = client.Entity(idEnt)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no entity with id: 1")
+
+}

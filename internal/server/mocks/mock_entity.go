@@ -50,6 +50,20 @@ func (mr *MockEntityRepoMockRecorder) CreateEntity(ctx, entity interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEntity", reflect.TypeOf((*MockEntityRepo)(nil).CreateEntity), ctx, entity)
 }
 
+// DeleteEntity mocks base method.
+func (m *MockEntityRepo) DeleteEntity(ctx context.Context, id, userID int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEntity", ctx, id, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEntity indicates an expected call of DeleteEntity.
+func (mr *MockEntityRepoMockRecorder) DeleteEntity(ctx, id, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEntity", reflect.TypeOf((*MockEntityRepo)(nil).DeleteEntity), ctx, id, userID)
+}
+
 // GetBinaryFilenameByEntityID mocks base method.
 func (m *MockEntityRepo) GetBinaryFilenameByEntityID(ctx context.Context, entityID int32) (string, error) {
 	m.ctrl.T.Helper()

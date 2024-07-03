@@ -23,6 +23,7 @@ import (
 type EntityRepo interface {
 	CreateEntity(ctx context.Context, entity EntityModel) (int32, error)
 	UpdateEntity(ctx context.Context, entity EntityModel) error
+	DeleteEntity(ctx context.Context, id int32, userID int32) error
 	GetEntity(ctx context.Context, id int32) (EntityModel, error)
 	GetBinaryFilenameByEntityID(ctx context.Context, entityID int32) (string, error)
 	SetChunkCountForCryptoBinary(ctx context.Context, entityID int32, chunkCount int32) error
@@ -201,6 +202,38 @@ func (e *Entity) SaveEditEntity(ctx context.Context, entity EntityModel) error {
 	err = e.repoEntity.UpdateEntity(ctx, entity)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (e *Entity) DeleteEntity(ctx context.Context, id int32, userID int32) error {
+
+	// Получаем удаляемую сущность
+	entOld, err := e.repoEntity.GetEntity(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	err = e.repoEntity.DeleteEntity(ctx, id, userID)
+	if err != nil {
+		return err
+	}
+
+	// Удаляем папку с файлами, если нужно
+	for _, val := range entOld.Props {
+		isType, _ := e.repoField.IsFieldType(ctx, val.FieldID, constants.FieldTypePath)
+		if !isType {
+			continue
+		}
+
+		binprop := &BinaryFileProperty{}
+		err = json.Unmarshal([]byte(val.Value), binprop)
+		if err != nil {
+			return err
+		}
+
+		os.RemoveAll(path.Dir(binprop.Servername) + "/")
 	}
 
 	return nil

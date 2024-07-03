@@ -153,6 +153,16 @@ message EntityResponse {
   string error = 5;               // если возникла ошибка - описание ошибки, иначе - пустая строка
 }
 
+// Запрос на удаление сущности
+message DeleteEntityRequest {
+  int32 id = 1;     // Идентификатор сущности
+}
+
+message DeleteEntityResponse {
+  string error = 1;            // если возникла ошибка - описание ошибки, иначе - пустая строка
+}
+
+
 // Загрузка бинарных данных с сервера
 message DownloadBinRequest {
   int32 entity_id = 1;       // код сущности для которого будут загружаться бинарные данные
@@ -184,6 +194,7 @@ service Keeper {
 
   rpc AddEntity(AddEntityRequest) returns (AddEntityResponse);
   rpc SaveEditEntity(SaveEntityRequest) returns (SaveEntityResponse);
+  rpc DeleteEntity(DeleteEntityRequest) returns (DeleteEntityResponse);
   rpc UploadBinary(stream UploadBinRequest) returns (UploadBinResponse);
   rpc UploadCryptoBinary(stream UploadBinRequest) returns (UploadBinResponse);
 

@@ -39,6 +39,8 @@ type EntityService interface {
 	AddEntity(ctx context.Context, entity entity.EntityModel) (int32, error)
 	// SaveEditEntity сохранить отредактированную
 	SaveEditEntity(ctx context.Context, entity entity.EntityModel) error
+	// DeleteEntity удалить сущность
+	DeleteEntity(ctx context.Context, id int32, userID int32) error
 	// Entity Получить сущность
 	Entity(ctx context.Context, id int32) (*entity.EntityModel, error)
 	// EntityList Список сущностей определенного типа для пользователя

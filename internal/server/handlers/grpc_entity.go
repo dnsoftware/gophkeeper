@@ -96,6 +96,9 @@ func (g *GRPCServer) SaveEditEntity(ctx context.Context, in *pb.SaveEntityReques
 func (g *GRPCServer) Entity(ctx context.Context, in *pb.EntityRequest) (*pb.EntityResponse, error) {
 
 	ent, err := g.svs.EntityService.Entity(ctx, in.Id)
+	if err != nil {
+		return nil, err
+	}
 
 	var props = make([]*pb.Property, 0, len(ent.Props))
 	for _, val := range ent.Props {
@@ -123,6 +126,18 @@ func (g *GRPCServer) Entity(ctx context.Context, in *pb.EntityRequest) (*pb.Enti
 	}
 
 	return ret, err
+}
+
+func (g *GRPCServer) DeleteEntity(ctx context.Context, in *pb.DeleteEntityRequest) (*pb.DeleteEntityResponse, error) {
+
+	userID := getContextUserID(ctx)
+
+	err := g.svs.EntityService.DeleteEntity(ctx, in.Id, int32(userID))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DeleteEntityResponse{Error: ""}, nil
 }
 
 func (g *GRPCServer) UploadBinary(stream pb.Keeper_UploadBinaryServer) error {

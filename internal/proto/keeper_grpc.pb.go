@@ -26,6 +26,7 @@ const (
 	Keeper_Fields_FullMethodName               = "/proto.Keeper/Fields"
 	Keeper_AddEntity_FullMethodName            = "/proto.Keeper/AddEntity"
 	Keeper_SaveEditEntity_FullMethodName       = "/proto.Keeper/SaveEditEntity"
+	Keeper_DeleteEntity_FullMethodName         = "/proto.Keeper/DeleteEntity"
 	Keeper_UploadBinary_FullMethodName         = "/proto.Keeper/UploadBinary"
 	Keeper_UploadCryptoBinary_FullMethodName   = "/proto.Keeper/UploadCryptoBinary"
 	Keeper_Entity_FullMethodName               = "/proto.Keeper/Entity"
@@ -45,6 +46,7 @@ type KeeperClient interface {
 	Fields(ctx context.Context, in *FieldsRequest, opts ...grpc.CallOption) (*FieldsResponse, error)
 	AddEntity(ctx context.Context, in *AddEntityRequest, opts ...grpc.CallOption) (*AddEntityResponse, error)
 	SaveEditEntity(ctx context.Context, in *SaveEntityRequest, opts ...grpc.CallOption) (*SaveEntityResponse, error)
+	DeleteEntity(ctx context.Context, in *DeleteEntityRequest, opts ...grpc.CallOption) (*DeleteEntityResponse, error)
 	UploadBinary(ctx context.Context, opts ...grpc.CallOption) (Keeper_UploadBinaryClient, error)
 	UploadCryptoBinary(ctx context.Context, opts ...grpc.CallOption) (Keeper_UploadCryptoBinaryClient, error)
 	Entity(ctx context.Context, in *EntityRequest, opts ...grpc.CallOption) (*EntityResponse, error)
@@ -118,6 +120,15 @@ func (c *keeperClient) AddEntity(ctx context.Context, in *AddEntityRequest, opts
 func (c *keeperClient) SaveEditEntity(ctx context.Context, in *SaveEntityRequest, opts ...grpc.CallOption) (*SaveEntityResponse, error) {
 	out := new(SaveEntityResponse)
 	err := c.cc.Invoke(ctx, Keeper_SaveEditEntity_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *keeperClient) DeleteEntity(ctx context.Context, in *DeleteEntityRequest, opts ...grpc.CallOption) (*DeleteEntityResponse, error) {
+	out := new(DeleteEntityResponse)
+	err := c.cc.Invoke(ctx, Keeper_DeleteEntity_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -285,6 +296,7 @@ type KeeperServer interface {
 	Fields(context.Context, *FieldsRequest) (*FieldsResponse, error)
 	AddEntity(context.Context, *AddEntityRequest) (*AddEntityResponse, error)
 	SaveEditEntity(context.Context, *SaveEntityRequest) (*SaveEntityResponse, error)
+	DeleteEntity(context.Context, *DeleteEntityRequest) (*DeleteEntityResponse, error)
 	UploadBinary(Keeper_UploadBinaryServer) error
 	UploadCryptoBinary(Keeper_UploadCryptoBinaryServer) error
 	Entity(context.Context, *EntityRequest) (*EntityResponse, error)
@@ -318,6 +330,9 @@ func (UnimplementedKeeperServer) AddEntity(context.Context, *AddEntityRequest) (
 }
 func (UnimplementedKeeperServer) SaveEditEntity(context.Context, *SaveEntityRequest) (*SaveEntityResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveEditEntity not implemented")
+}
+func (UnimplementedKeeperServer) DeleteEntity(context.Context, *DeleteEntityRequest) (*DeleteEntityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteEntity not implemented")
 }
 func (UnimplementedKeeperServer) UploadBinary(Keeper_UploadBinaryServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadBinary not implemented")
@@ -472,6 +487,24 @@ func _Keeper_SaveEditEntity_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KeeperServer).SaveEditEntity(ctx, req.(*SaveEntityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Keeper_DeleteEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteEntityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KeeperServer).DeleteEntity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Keeper_DeleteEntity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KeeperServer).DeleteEntity(ctx, req.(*DeleteEntityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -640,6 +673,10 @@ var Keeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveEditEntity",
 			Handler:    _Keeper_SaveEditEntity_Handler,
+		},
+		{
+			MethodName: "DeleteEntity",
+			Handler:    _Keeper_DeleteEntity_Handler,
 		},
 		{
 			MethodName: "Entity",

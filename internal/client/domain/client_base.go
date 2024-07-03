@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 )
@@ -269,7 +270,28 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 						return WorkAgain, nil
 
 					case "2":
-						fmt.Println("Не реализовано")
+
+						areYouSure, err := c.rl.input("Уверены (Y or N)>>", "required", `{"required": "Неверный выбор"}`)
+						if err != nil {
+							fmt.Println(err.Error())
+							continue
+						}
+
+						// Удаляем
+						if strings.ToLower(areYouSure) == "y" {
+							err = c.Sender.DeleteEntity(entityID)
+							if err != nil {
+								fmt.Println(err.Error())
+							}
+
+							fmt.Println("Запись успешно удалена!")
+
+							return WorkAgain, nil
+						}
+
+						// Пропускаем
+						break
+
 					case "0":
 						return WorkAgain, nil
 					default:

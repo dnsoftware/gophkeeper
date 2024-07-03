@@ -31,6 +31,7 @@ type Sender interface {
 	Fields(etype string) ([]*Field, error)
 	AddEntity(ae Entity) (int32, error)
 	SaveEntity(ae Entity) (int32, error)
+	DeleteEntity(id int32) error
 	UploadBinary(entityId int32, file string) (int32, error)
 	DownloadBinary(entityId int32, fileName string) (string, error)
 	UploadCryptoBinary(entityId int32, file string) (int32, error)

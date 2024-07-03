@@ -578,3 +578,21 @@ func (t *GRPCSender) EntityList(etype string) (map[int32]string, error) {
 
 	return list, nil
 }
+
+func (t *GRPCSender) DeleteEntity(id int32) error {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
+	var opts []grpc.CallOption
+
+	in := pb.DeleteEntityRequest{Id: id}
+	resp, err := t.KeeperClient.DeleteEntity(ctx, &in, opts...)
+	if err != nil {
+		return err
+	}
+
+	if resp.Error != "" {
+		return errors.New(resp.Error)
+	}
+
+	return nil
+}
