@@ -42,7 +42,7 @@ func NewGRPCSender(serverAddress string, secretKey string, creds credentials.Tra
 	authInterceptor := NewAuthInterceptor(kc, excludeMethods)
 
 	// методы, данные в которых надо шифровать
-	validOutCryptMethods := map[string]bool{constants.MethodAddEntity: true, constants.MethodEntity: true}
+	validOutCryptMethods := map[string]bool{constants.MethodAddEntity: true, constants.MethodEntity: true, constants.MethodSaveEditEntity: true}
 	dataOutInterceptor := NewDataOutInterceptor(kc, secretKey, validOutCryptMethods)
 
 	opts = append(opts,
@@ -197,6 +197,50 @@ func (t *GRPCSender) AddEntity(ae domain.Entity) (int32, error) {
 	}
 
 	resp, err := t.KeeperClient.AddEntity(ctx, in, opts...)
+
+	if resp.Error != "" {
+		return 0, fmt.Errorf(resp.Error)
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.Id, err
+}
+
+// SaveEntity Сохранение отредактированной сущности
+func (t *GRPCSender) SaveEntity(ae domain.Entity) (int32, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
+	defer cancel()
+
+	var opts []grpc.CallOption
+	var props = make([]*pb.Property, 0, len(ae.Props))
+	for _, val := range ae.Props {
+		props = append(props, &pb.Property{
+			EntityId: val.EntityId,
+			FieldId:  val.FieldId,
+			Value:    val.Value,
+		})
+	}
+
+	var metainfo = make([]*pb.Metainfo, 0, len(ae.Metainfo))
+	for _, val := range ae.Metainfo {
+		metainfo = append(metainfo, &pb.Metainfo{
+			EntityId: val.EntityId,
+			Title:    val.Title,
+			Value:    val.Value,
+		})
+	}
+
+	in := &pb.SaveEntityRequest{
+		Id:       ae.Id,
+		Etype:    ae.Etype,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
+	resp, err := t.KeeperClient.SaveEditEntity(ctx, in, opts...)
 
 	if resp.Error != "" {
 		return 0, fmt.Errorf(resp.Error)

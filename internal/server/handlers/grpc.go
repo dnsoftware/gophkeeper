@@ -37,6 +37,8 @@ type FieldService interface {
 type EntityService interface {
 	// AddEntity добавить сущность
 	AddEntity(ctx context.Context, entity entity.EntityModel) (int32, error)
+	// SaveEditEntity сохранить отредактированную
+	SaveEditEntity(ctx context.Context, entity entity.EntityModel) error
 	// Entity Получить сущность
 	Entity(ctx context.Context, id int32) (*entity.EntityModel, error)
 	// EntityList Список сущностей определенного типа для пользователя

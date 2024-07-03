@@ -38,7 +38,8 @@ const (
 // Названия методов для которых применяется симметричное шифрования
 // шифровка отправляемых данных
 const (
-	MethodAddEntity string = "AddEntity"
+	MethodAddEntity      string = "AddEntity"
+	MethodSaveEditEntity string = "SaveEditEntity"
 )
 
 // Названия методов для которых применяется симметричное шифрования

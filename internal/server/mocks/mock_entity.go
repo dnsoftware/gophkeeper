@@ -109,6 +109,20 @@ func (mr *MockEntityRepoMockRecorder) SetChunkCountForCryptoBinary(ctx, entityID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetChunkCountForCryptoBinary", reflect.TypeOf((*MockEntityRepo)(nil).SetChunkCountForCryptoBinary), ctx, entityID, chunkCount)
 }
 
+// UpdateEntity mocks base method.
+func (m *MockEntityRepo) UpdateEntity(ctx context.Context, entity entity.EntityModel) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEntity", ctx, entity)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEntity indicates an expected call of UpdateEntity.
+func (mr *MockEntityRepoMockRecorder) UpdateEntity(ctx, entity interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEntity", reflect.TypeOf((*MockEntityRepo)(nil).UpdateEntity), ctx, entity)
+}
+
 // MockFieldRepo is a mock of FieldRepo interface.
 type MockFieldRepo struct {
 	ctrl     *gomock.Controller

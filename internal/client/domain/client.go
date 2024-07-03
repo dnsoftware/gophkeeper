@@ -3,11 +3,25 @@ package domain
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
-
-	"github.com/chzyer/readline"
 )
+
+// Работа с командной строкой
+type Readline interface {
+	input(prompt string, validateRules string, validateMessages string) (string, error)
+	edit(prompt string, what string, validateRules string, validateMessages string) (string, error)
+	Writeln(str string)
+	Registration() (string, string, error)
+	Login() (string, string, error)
+	Stderr() io.Writer
+	Close() error
+	MakeFieldsDescription(fields []*Field)
+	GetEtypeName(etype string) string
+	SetEtypeName(etype string, name string)
+	GetField(fieldID int32) *Field
+	GetFieldsGroup(etype string) []*Field
+	interrupt(line string, err error) string
+}
 
 // Sender Интерфейс отправки/приема данных с сервера
 type Sender interface {
@@ -16,6 +30,7 @@ type Sender interface {
 	EntityCodes() ([]*EntityCode, error)
 	Fields(etype string) ([]*Field, error)
 	AddEntity(ae Entity) (int32, error)
+	SaveEntity(ae Entity) (int32, error)
 	UploadBinary(entityId int32, file string) (int32, error)
 	DownloadBinary(entityId int32, fileName string) (string, error)
 	UploadCryptoBinary(entityId int32, file string) (int32, error)
@@ -59,7 +74,8 @@ type Field struct {
 }
 
 type GophKeepClient struct {
-	rl     *CLIReader
+	//rl     *CLIReader
+	rl     Readline
 	Sender Sender
 }
 
@@ -76,24 +92,10 @@ const (
 	WorkStop  string = "stop"
 )
 
-func NewGophKeepClient(sender Sender) (*GophKeepClient, error) {
-
-	rl, err := NewCLIReadline(&readline.Config{
-		Prompt:          "\033[31m»\033[0m ",
-		HistoryFile:     "/tmp/readline.tmp",
-		AutoComplete:    completer,
-		InterruptPrompt: "^C",
-		EOFPrompt:       "exit",
-
-		HistorySearchFold:   true,
-		FuncFilterInputRune: filterInput,
-	})
-	if err != nil {
-		return nil, err
-	}
+func NewGophKeepClient(readline Readline, sender Sender) (*GophKeepClient, error) {
 
 	client := &GophKeepClient{
-		rl:     rl,
+		rl:     readline,
 		Sender: sender,
 	}
 
@@ -111,7 +113,7 @@ func (c *GophKeepClient) Start() {
 	// Логин или регистрация
 	for {
 		fmt.Println("Нажмите [Enter] для входа или \"r\" для регистрации  ")
-		line, err := c.rl.Readline()
+		line, err := c.rl.input(">>", "", "{}")
 		if err != nil {
 			c.rl.Writeln(err.Error())
 			return
@@ -163,7 +165,7 @@ func (c *GophKeepClient) Start() {
 		c.rl.Writeln(fmt.Sprintf("Ошибка загрузки сущностей: %v", err))
 	}
 	for _, val := range entCodes {
-		c.rl.etypes[val.Etype] = val.Name
+		c.rl.SetEtypeName(val.Etype, val.Name)
 	}
 
 	// Инициализация описаний полей сущностей
@@ -197,82 +199,24 @@ func (c *GophKeepClient) Start() {
 
 // DisplayEntity отобразить сущность в консоли
 func (c *GophKeepClient) DisplayEntity(ent Entity) {
-	c.rl.Writeln("------------------------")
-	c.rl.Writeln(" " + c.rl.etypes[ent.Etype])
+	fmt.Println("------------------------")
+	fmt.Println(" " + c.rl.GetEtypeName(ent.Etype))
 	for _, val := range ent.Props {
-		c.rl.Writeln("      " + c.rl.fieldsByID[val.FieldId].Name + ": " + val.Value)
+		fmt.Println("      " + c.rl.GetField(val.FieldId).Name + ": " + val.Value)
 	}
 	for _, val := range ent.Metainfo {
-		c.rl.Writeln("      " + val.Title + ": " + val.Value)
+		fmt.Println("      " + val.Title + ": " + val.Value)
 	}
-	c.rl.Writeln("------------------------")
+	fmt.Println("------------------------")
 }
 
 // DisplayEntityBinary отобразить сущность в консоли и показать путь к загруженному файлу
 func (c *GophKeepClient) DisplayEntityBinary(ent Entity, filePath string) {
-	c.rl.Writeln("------------------------")
-	c.rl.Writeln(" " + c.rl.etypes[ent.Etype])
-	c.rl.Writeln("Путь к загруженному файлу: " + filePath)
+	fmt.Println("------------------------")
+	fmt.Println(" " + c.rl.GetEtypeName(ent.Etype))
+	fmt.Println("Путь к загруженному файлу: " + filePath)
 	for _, val := range ent.Metainfo {
-		c.rl.Writeln("      " + val.Title + ": " + val.Value)
+		fmt.Println("      " + val.Title + ": " + val.Value)
 	}
-	c.rl.Writeln("------------------------")
-}
-
-func usage(w io.Writer) {
-	io.WriteString(w, "commands:\n")
-	io.WriteString(w, completer.Tree("    "))
-}
-
-// Function constructor - constructs new function for listing given directory
-func listFiles(path string) func(string) []string {
-	return func(line string) []string {
-		names := make([]string, 0)
-		files, _ := ioutil.ReadDir(path)
-		for _, f := range files {
-			names = append(names, f.Name())
-		}
-		return names
-	}
-}
-
-var completer = readline.NewPrefixCompleter(
-	readline.PcItem("mode",
-		readline.PcItem("vi"),
-		readline.PcItem("emacs"),
-	),
-	readline.PcItem("login"),
-	readline.PcItem("say",
-		readline.PcItemDynamic(listFiles("./"),
-			readline.PcItem("with",
-				readline.PcItem("following"),
-				readline.PcItem("items"),
-			),
-		),
-		readline.PcItem("hello"),
-		readline.PcItem("bye"),
-	),
-	readline.PcItem("setprompt"),
-	readline.PcItem("setpassword"),
-	readline.PcItem("bye"),
-	readline.PcItem("help"),
-	readline.PcItem("go",
-		readline.PcItem("build", readline.PcItem("-o"), readline.PcItem("-v")),
-		readline.PcItem("install",
-			readline.PcItem("-v"),
-			readline.PcItem("-vv"),
-			readline.PcItem("-vvv"),
-		),
-		readline.PcItem("test"),
-	),
-	readline.PcItem("sleep"),
-)
-
-func filterInput(r rune) (rune, bool) {
-	switch r {
-	// block CtrlZ feature
-	case readline.CharCtrlZ:
-		return r, false
-	}
-	return r, true
+	fmt.Println("------------------------")
 }

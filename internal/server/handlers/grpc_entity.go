@@ -52,6 +52,47 @@ func (g *GRPCServer) AddEntity(ctx context.Context, in *pb.AddEntityRequest) (*p
 	}, nil
 }
 
+func (g *GRPCServer) SaveEditEntity(ctx context.Context, in *pb.SaveEntityRequest) (*pb.SaveEntityResponse, error) {
+
+	userID := getContextUserID(ctx)
+
+	var props = make([]entity.Property, 0, len(in.Props))
+	for _, val := range in.Props {
+		props = append(props, entity.Property{
+			EntityID: val.EntityId,
+			FieldID:  val.FieldId,
+			Value:    val.Value,
+		})
+	}
+
+	var metainfo = make([]entity.Metainfo, 0, len(in.Metainfo))
+	for _, val := range in.Metainfo {
+		metainfo = append(metainfo, entity.Metainfo{
+			EntityID: val.EntityId,
+			Title:    val.Title,
+			Value:    val.Value,
+		})
+	}
+
+	ent := entity.EntityModel{
+		ID:       in.Id,
+		UserID:   int32(userID),
+		Etype:    in.Etype,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
+	err := g.svs.EntityService.SaveEditEntity(ctx, ent)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.SaveEntityResponse{
+		Id:    ent.ID,
+		Error: "",
+	}, nil
+}
+
 func (g *GRPCServer) Entity(ctx context.Context, in *pb.EntityRequest) (*pb.EntityResponse, error) {
 
 	ent, err := g.svs.EntityService.Entity(ctx, in.Id)

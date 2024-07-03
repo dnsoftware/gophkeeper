@@ -22,6 +22,7 @@ import (
 
 type EntityRepo interface {
 	CreateEntity(ctx context.Context, entity EntityModel) (int32, error)
+	UpdateEntity(ctx context.Context, entity EntityModel) error
 	GetEntity(ctx context.Context, id int32) (EntityModel, error)
 	GetBinaryFilenameByEntityID(ctx context.Context, entityID int32) (string, error)
 	SetChunkCountForCryptoBinary(ctx context.Context, entityID int32, chunkCount int32) error
@@ -132,6 +133,77 @@ func (e *Entity) Entity(ctx context.Context, id int32) (*EntityModel, error) {
 	}
 
 	return &ent, nil
+}
+
+// SaveEditEntity сохранение отредактированных данных сущности
+func (e *Entity) SaveEditEntity(ctx context.Context, entity EntityModel) error {
+
+	// Получаем старую сущность
+	entOld, err := e.repoEntity.GetEntity(ctx, entity.ID)
+	if err != nil {
+		return err
+	}
+
+	// Удаляем старую папку
+	for _, val := range entOld.Props {
+		isType, _ := e.repoField.IsFieldType(ctx, val.FieldID, constants.FieldTypePath)
+		if !isType {
+			continue
+		}
+
+		binprop := &BinaryFileProperty{}
+		err = json.Unmarshal([]byte(val.Value), binprop)
+		if err != nil {
+			return err
+		}
+
+		os.RemoveAll(path.Dir(binprop.Servername) + "/")
+	}
+
+	// если среди добавляемых свойств есть ftype=path (означает что данные должны быть сохранены в файле)
+	// удаляем папку со старыми файлами и заводим новую
+	for i, val := range entity.Props {
+		isType, _ := e.repoField.IsFieldType(ctx, val.FieldID, constants.FieldTypePath)
+		if !isType {
+			continue
+		}
+
+		// Заводим новую папку
+		path, _ := os.Executable()
+		useridStr := fmt.Sprintf("%v", entity.UserID)
+
+		c := 10
+		b := make([]byte, c)
+		rand.Read(b)
+		randName := hex.EncodeToString(b)
+
+		fileBankDir := filepath.Dir(path) + "/" + constants.FileBankDir + "/" + entity.Etype + "/" + useridStr + "/" + randName
+		err := os.MkdirAll(fileBankDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		fileBankPath := fileBankDir + "/" + randName
+		f, err := os.Create(fileBankPath)
+		if err != nil {
+			return err
+		}
+		f.Close()
+
+		p := BinaryFileProperty{
+			Servername: fileBankPath,
+			Clientname: val.Value,
+		}
+		propval, _ := json.Marshal(p)
+
+		entity.Props[i].Value = string(propval)
+	}
+
+	err = e.repoEntity.UpdateEntity(ctx, entity)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (e *Entity) UploadBinary(stream pb.Keeper_UploadBinaryServer) (int32, error) {

@@ -112,6 +112,21 @@ message AddEntityResponse {
   string error = 2;               // если возникла ошибка - описание ошибки, иначе - пустая строка
 }
 
+// Запрос на редактирование сущности
+message SaveEntityRequest {
+  int32 id = 1;                   // ID сущности
+  string etype = 2;               // тип сущности: card, text, logopas, binary и т.д.
+  repeated Property props = 3;    // массив значений свойств
+  repeated Metainfo metainfo = 4; // массив значений метаинформации
+
+}
+
+// Ответ на запрос на добавление новой сущности
+message SaveEntityResponse {
+  int32 id = 1;                   // ID сущности
+  string error = 2;               // если возникла ошибка - описание ошибки, иначе - пустая строка
+}
+
 // Загрузка бинарных данных на сервер (вызывается сразу после AddEntityResponse)
 message UploadBinRequest {
   int32 entity_id = 1;       // код сущности для которого будут загружаться бинарные данные
@@ -168,6 +183,7 @@ service Keeper {
   rpc Fields(FieldsRequest) returns (FieldsResponse);
 
   rpc AddEntity(AddEntityRequest) returns (AddEntityResponse);
+  rpc SaveEditEntity(SaveEntityRequest) returns (SaveEntityResponse);
   rpc UploadBinary(stream UploadBinRequest) returns (UploadBinResponse);
   rpc UploadCryptoBinary(stream UploadBinRequest) returns (UploadBinResponse);
 

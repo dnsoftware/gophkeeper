@@ -43,4 +43,4 @@ mock_keeper:
 	mockgen -source=internal/server/domain/entity/entity.go -destination=internal/server/mocks/mock_entity.go  -package="mocks"
 
 mock_client:
-	mockgen -source=internal/client/domain/client.go -destination=internal/client/mocks/mock_client.go  -package="mocksclient"
+	mockgen -source=internal/client/domain/client.go -destination=internal/client/domain/mock_client.go  -package="domain"

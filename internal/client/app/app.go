@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 
+	"github.com/chzyer/readline"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -35,7 +36,21 @@ func ClientRun() {
 		logger.Log().Fatal(err.Error())
 	}
 
-	client, err := domain.NewGophKeepClient(sender)
+	rl, err := domain.NewCLIReadline(&readline.Config{
+		Prompt:          "\033[31m»\033[0m ",
+		HistoryFile:     "/tmp/readline.tmp",
+		AutoComplete:    nil,
+		InterruptPrompt: "^C",
+		EOFPrompt:       "exit",
+
+		HistorySearchFold:   true,
+		FuncFilterInputRune: domain.FilterInput,
+	})
+	if err != nil {
+		logger.Log().Fatal(err.Error())
+	}
+
+	client, err := domain.NewGophKeepClient(rl, sender)
 	if err != nil {
 		logger.Log().Fatal(err.Error())
 	}

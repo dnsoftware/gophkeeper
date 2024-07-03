@@ -59,6 +59,49 @@ func (p *PgStorage) CreateEntity(ctx context.Context, entity entity.EntityModel)
 
 }
 
+// UpdateEntity Сохранение отредактированной сущности
+func (p *PgStorage) UpdateEntity(ctx context.Context, entity entity.EntityModel) error {
+
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// заносим свойства
+	for _, prop := range entity.Props {
+		query := "UPDATE properties SET value = $1 WHERE entity_id = $2 AND field_id = $3"
+		_, err = tx.ExecContext(ctx, query, prop.Value, entity.ID, prop.FieldID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// заносим метаинформацию
+	// Удаляем старую метаинформацию
+	queryDel := "DELETE FROM metainfo WHERE entity_id = $1"
+	_, err = tx.ExecContext(ctx, queryDel, entity.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Добавляем новые
+	for _, meta := range entity.Metainfo {
+		query := "INSERT INTO metainfo (entity_id, title, value) VALUES ($1, $2, $3)"
+		_, err = tx.ExecContext(ctx, query, entity.ID, meta.Title, meta.Value)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+
+	return nil
+
+}
+
 func (p *PgStorage) GetEntity(ctx context.Context, id int32) (entity.EntityModel, error) {
 
 	empty := entity.EntityModel{}

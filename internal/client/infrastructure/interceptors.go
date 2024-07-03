@@ -104,6 +104,19 @@ func (d *DataOutInterceptor) DataOutputInterceptor() grpc.UnaryClientInterceptor
 					entity.Metainfo[key].Title = utils.Encrypt(meta.Title, cryptoKey)
 					entity.Metainfo[key].Value = utils.Encrypt(meta.Value, cryptoKey)
 				}
+			case constants.MethodSaveEditEntity:
+				entity := req.(*proto.SaveEntityRequest)
+				for key, prop := range entity.Props {
+					if entity.Etype == constants.BinaryEntity || entity.Etype == constants.TextEntity { // название загружаемого файла не шифруем
+						entity.Props[key].Value = prop.Value
+					} else {
+						entity.Props[key].Value = utils.Encrypt(prop.Value, cryptoKey)
+					}
+				}
+				for key, meta := range entity.Metainfo {
+					entity.Metainfo[key].Title = utils.Encrypt(meta.Title, cryptoKey)
+					entity.Metainfo[key].Value = utils.Encrypt(meta.Value, cryptoKey)
+				}
 
 			}
 		}

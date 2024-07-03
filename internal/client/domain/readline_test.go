@@ -16,14 +16,14 @@ func TestRegistration(t *testing.T) {
 	rl, err := NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
 		HistoryFile:     "/tmp/readline.tmp",
-		AutoComplete:    completer,
+		AutoComplete:    nil,
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 		Stdin:           r,
 		//Stdout:          w,
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: filterInput,
+		FuncFilterInputRune: FilterInput,
 	})
 
 	// позитивный тест, логин и пароль проходят валидацию
@@ -106,14 +106,14 @@ func TestLogin(t *testing.T) {
 	rl, err := NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
 		HistoryFile:     "/tmp/readline.tmp",
-		AutoComplete:    completer,
+		AutoComplete:    nil,
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 		Stdin:           r,
 		//Stdout:          w,
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: filterInput,
+		FuncFilterInputRune: FilterInput,
 	})
 
 	// позитивный тест, логин и пароль проходят валидацию

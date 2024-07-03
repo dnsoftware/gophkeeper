@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -294,6 +295,46 @@ func TestAddEntity(t *testing.T) {
 	require.Equal(t, "Владелец карты", ent.Metainfo[0].Title)
 	require.Equal(t, "Василий Пупкин", ent.Metainfo[0].Value)
 
+	// Редактирование
+	for pkey, pval := range ent.Props {
+		switch pval.FieldId {
+		case 3:
+			ent.Props[pkey].Value = "5555222233334444"
+		case 4:
+			ent.Props[pkey].Value = "01/26"
+		case 5:
+			ent.Props[pkey].Value = "321"
+		}
+	}
+
+	var metainfo2 []*domain.Metainfo
+	metainfo2 = append(metainfo2,
+		&domain.Metainfo{
+			Title: "Владелец карты 2",
+			Value: "Василий Пупкин 2",
+		},
+		&domain.Metainfo{
+			Title: "Банк 2",
+			Value: "Суслик Инвест 2",
+		})
+	ent.Metainfo = metainfo2
+	idEnt2, err := client.SaveEntity(*ent)
+	require.NoError(t, err)
+	require.Equal(t, ent.Id, idEnt2)
+
+	// Проверка отредактированного
+	ent2, err := client.Entity(idEnt2)
+	for _, pval := range ent2.Props {
+		switch pval.FieldId {
+		case 3:
+			assert.Equal(t, "5555222233334444", pval.Value)
+		case 4:
+			assert.Equal(t, "01/26", pval.Value)
+		case 5:
+			assert.Equal(t, "321", pval.Value)
+		}
+	}
+
 	// добавление произвольных бинарных данных
 	props = nil
 	metainfo = nil
@@ -344,9 +385,6 @@ func TestAddEntity(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, downloadFile)
 
-	// добавление логина/пароля
-
-	// добавление произвольных текстовых данных
 }
 
 // TestAddCryptoBinary добавление сущностей с зашифрованными бинарными данными
@@ -417,6 +455,109 @@ func TestAddCryptoBinary(t *testing.T) {
 	downloadFile, err := client.DownloadCryptoBinary(idEnt, fd.Clientname)
 	require.NoError(t, err)
 	require.NotEmpty(t, downloadFile)
+}
+
+// Добавление и редактирование бинарных данных
+func TestEditBinaryEntity(t *testing.T) {
+	ctx := context.Background()
+
+	client, conn, err := setupFull(cfg, cfgClient)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// регистрируем пользователя
+	login := "username"
+	password := "userpass"
+	_, err = client.Registration(login, password, password)
+	require.NoError(t, err)
+
+	// логин с корректными данными, должны получить токен доступа и выставить токен в клиенте
+	token, err := client.Login(login, password)
+	md := metadata.New(map[string]string{"token": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	var props []*domain.Property
+	var metainfo []*domain.Metainfo
+
+	p, _ := os.Getwd()
+	parts := strings.Split(p, "internal")
+	uploadFile := parts[0] + "cmd/client/testbinary/gopher.jpg"
+	onlyFilename := filepath.Base(uploadFile)
+
+	props = append(props,
+		&domain.Property{
+			FieldId: 7,
+			Value:   onlyFilename,
+		})
+
+	metainfo = append(metainfo,
+		&domain.Metainfo{
+			Title: "Название картинки",
+			Value: "Суслик в естественной среде обитания",
+		})
+
+	entreq := domain.Entity{
+		Id:       0,
+		Etype:    constants.BinaryEntity,
+		Props:    props,
+		Metainfo: metainfo,
+	}
+
+	idEnt, err := client.AddEntity(entreq)
+
+	require.NoError(t, err)
+	require.Greater(t, idEnt, int32(0))
+
+	// теперь после заведения записи на сервере загружаем бинарник на сервер
+	size, err := client.UploadCryptoBinary(idEnt, uploadFile)
+	require.NoError(t, err)
+	require.Greater(t, size, int32(0))
+
+	// получаем данные бинарной сущности и загружаем бинарник с сервера
+	entBin, err := client.Entity(idEnt)
+	require.NoError(t, err)
+
+	fd := &entity.BinaryFileProperty{}
+	err = json.Unmarshal([]byte(entBin.Props[0].Value), fd)
+	require.NoError(t, err)
+
+	downloadFile, err := client.DownloadCryptoBinary(idEnt, fd.Clientname)
+	require.NoError(t, err)
+	require.NotEmpty(t, downloadFile)
+
+	// Редактирование
+	uploadFile2 := parts[0] + "cmd/client/testbinary/gopher2.png"
+	onlyFilename2 := filepath.Base(uploadFile2)
+	entBin.Props[0].Value = onlyFilename2
+
+	var metainfo2 []*domain.Metainfo
+	metainfo2 = append(metainfo2,
+		&domain.Metainfo{
+			Title: "Картинка 2",
+			Value: "Гофер 2",
+		})
+	entBin.Metainfo = metainfo2
+	idEnt2, err := client.SaveEntity(*entBin)
+	require.NoError(t, err)
+	require.Equal(t, entBin.Id, idEnt2)
+
+	// после редактирования записи на сервере загружаем бинарник на сервер
+	size, err = client.UploadCryptoBinary(idEnt2, uploadFile2)
+	require.NoError(t, err)
+	require.Greater(t, size, int32(0))
+
+	// получаем данные бинарной сущности и загружаем бинарник с сервера
+	entBin, err = client.Entity(idEnt2)
+	require.NoError(t, err)
+
+	fd = &entity.BinaryFileProperty{}
+	err = json.Unmarshal([]byte(entBin.Props[0].Value), fd)
+	require.NoError(t, err)
+
+	downloadFile, err = client.DownloadCryptoBinary(idEnt2, fd.Clientname)
+	require.NoError(t, err)
+	require.NotEmpty(t, downloadFile)
+
 }
 
 // TestEntityList получение списка сущностей пользователя определенного типа

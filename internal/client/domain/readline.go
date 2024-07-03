@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -14,7 +15,7 @@ type CLIReader struct {
 	*readline.Instance
 	validator   *validator.Validate
 	passwordCfg *readline.Config
-	etypes      map[string]string
+	etypes      map[string]string   // справочник типов сущностей (код_сущности: наименование)
 	fieldsByID  map[int32]*Field    // карта описаний полей сущности с ключом по ID поля из таблицы fields
 	fieldsGroup map[string][]*Field // карта описаний полей сущности,сгруппированных по типу сущности (card, logopas, text, binary и т.д.)
 }
@@ -159,6 +160,22 @@ func (r *CLIReader) Login() (string, string, error) {
 	return login, password, nil
 }
 
+// GetEtypeName получение названия типа сущности по коду
+func (r *CLIReader) GetEtypeName(etype string) string {
+	return r.etypes[etype]
+}
+func (r *CLIReader) SetEtypeName(etype string, name string) {
+	r.etypes[etype] = name
+}
+
+func (r *CLIReader) GetField(fieldID int32) *Field {
+	return r.fieldsByID[fieldID]
+}
+
+func (r *CLIReader) GetFieldsGroup(etype string) []*Field {
+	return r.fieldsGroup[etype]
+}
+
 // Логика ввода строки значения поля
 // Будет запрашивать ввод до тех пор пока не пройдет валидацию
 // validateMessages - правила валидации в формате JSON.
@@ -185,6 +202,60 @@ func (r *CLIReader) input(prompt string, validateRules string, validateMessages 
 		if err != nil {
 			r.Writeln(err.Error())
 			continue
+		}
+
+		if validateRules == "" {
+			break
+		}
+
+		errs := r.validator.Var(value, validateRules)
+		errors, okAssert := errs.(validator.ValidationErrors)
+		if okAssert {
+			for _, err := range errors {
+				message := err.Error()
+				if val, ok := vm[err.Tag()]; ok {
+					message = val
+					message = strings.Replace(message, "<param>", err.Param(), -1)
+					r.Writeln(message)
+				}
+			}
+			if len(errors) > 0 {
+				continue
+			}
+		}
+
+		break
+	}
+
+	return value, nil
+}
+
+// Редактирование
+func (r *CLIReader) edit(prompt string, what string, validateRules string, validateMessages string) (string, error) {
+	var value string
+	var err error
+
+	var vm map[string]string
+	err = json.Unmarshal([]byte(validateMessages), &vm)
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		r.SetPrompt(prompt)
+		value, err = r.ReadlineWithDefault(what)
+
+		if r.interrupt(value, err) == loopBreak {
+			return "", readline.ErrInterrupt
+		}
+
+		if err != nil {
+			r.Writeln(err.Error())
+			continue
+		}
+
+		if validateRules == "" {
+			break
 		}
 
 		errs := r.validator.Var(value, validateRules)
@@ -227,4 +298,70 @@ func (r *CLIReader) interrupt(line string, err error) string {
 	}
 
 	return loopNone
+}
+
+func (r *CLIReader) Close() error {
+	return r.Instance.Close()
+}
+
+func (r *CLIReader) Stderr() io.Writer {
+	return r.Instance.Stderr()
+}
+
+//var Completer = readline.NewPrefixCompleter(
+//	readline.PcItem("mode",
+//		readline.PcItem("vi"),
+//		readline.PcItem("emacs"),
+//	),
+//	readline.PcItem("login"),
+//	readline.PcItem("say",
+//		readline.PcItemDynamic(ListFiles("./"),
+//			readline.PcItem("with",
+//				readline.PcItem("following"),
+//				readline.PcItem("items"),
+//			),
+//		),
+//		readline.PcItem("hello"),
+//		readline.PcItem("bye"),
+//	),
+//	readline.PcItem("setprompt"),
+//	readline.PcItem("setpassword"),
+//	readline.PcItem("bye"),
+//	readline.PcItem("help"),
+//	readline.PcItem("go",
+//		readline.PcItem("build", readline.PcItem("-o"), readline.PcItem("-v")),
+//		readline.PcItem("install",
+//			readline.PcItem("-v"),
+//			readline.PcItem("-vv"),
+//			readline.PcItem("-vvv"),
+//		),
+//		readline.PcItem("test"),
+//	),
+//	readline.PcItem("sleep"),
+//)
+
+func FilterInput(r rune) (rune, bool) {
+	switch r {
+	// block CtrlZ feature
+	case readline.CharCtrlZ:
+		return r, false
+	}
+	return r, true
+}
+
+//func Usage(w io.Writer) {
+//	io.WriteString(w, "commands:\n")
+//	io.WriteString(w, Completer.Tree("    "))
+//}
+
+// Function constructor - constructs new function for listing given directory
+func ListFiles(path string) func(string) []string {
+	return func(line string) []string {
+		names := make([]string, 0)
+		files, _ := ioutil.ReadDir(path)
+		for _, f := range files {
+			names = append(names, f.Name())
+		}
+		return names
+	}
 }

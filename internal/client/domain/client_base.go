@@ -11,10 +11,6 @@ import (
 
 func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 
-	//cmd := exec.Command("clear")
-	//cmd.Stdout = os.Stdout
-	//cmd.Run()
-
 	fmt.Println("Доступна работа со следующими объектами:")
 	for i, val := range entCodes {
 		fmt.Println(fmt.Sprintf("[%v] %v", i+1, val.Name))
@@ -43,7 +39,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	var doStr string
 	for {
 		for {
-			doStr, err = c.rl.input(">>", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
+			doStr, err = c.rl.input("Действия для объекта>>", "required,number", `{"required": "Не может быть пустым", "number": "Только число"}`)
 			if err != nil {
 				fmt.Println(err.Error())
 				continue
@@ -65,7 +61,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 			}
 
 			// Заполняем обязательные поля
-			for _, val := range c.rl.fieldsGroup[entCode.Etype] {
+			for _, val := range c.rl.GetFieldsGroup(entCode.Etype) {
 				fieldData, err := c.rl.input(val.Name+":", val.ValidateRules, val.ValidateMessages)
 				if err != nil {
 					fmt.Println(err.Error())
@@ -80,13 +76,14 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 			// Заполняем поля метаданных
 			// Добавить или перейти дальше
 			nextTag := false
+			prefix := "Метаданные"
 			for {
 				fmt.Println("")
 				fmt.Println("Выберите дальнейшее действие:")
 				fmt.Println("[1] Добавить метаданные")
 				fmt.Println("[2] Перейти к сохранению")
 				fmt.Println("[0] Начать сначала")
-				addOrNext, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+				addOrNext, err := c.rl.input(prefix+" или сохранение>>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 				if err != nil {
 					fmt.Println(err.Error())
 					continue
@@ -94,27 +91,8 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 
 				switch addOrNext {
 				case "1":
-					for {
-						metaName, err := c.rl.input("Название поля метаданных:", "required", `{"required": "Укажите название поля метаданных"}`)
-						if err != nil {
-							fmt.Println(err.Error())
-							continue
-						}
-
-						metaValue, err := c.rl.input("Значение поля метаданных:", "required", `{"required": "Укажите значение поля метаданных"}`)
-						if err != nil {
-							fmt.Println(err.Error())
-							continue
-						}
-
-						metas = append(metas, &Metainfo{
-							EntityId: 0,
-							Title:    metaName,
-							Value:    metaValue,
-						})
-
-						break
-					}
+					metas = c.createMetainfo(metas)
+					prefix = "Еще метаданные"
 				case "2":
 					nextTag = true
 					break
@@ -137,7 +115,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 						fmt.Println("Выберите дальнейшее действие:")
 						fmt.Println("[1] Сохранить")
 						fmt.Println("[0] Начать заново")
-						againOrSave, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+						againOrSave, err := c.rl.input("Сохранить или заново>>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 						if err != nil {
 							fmt.Println(err.Error())
 							continue
@@ -165,6 +143,8 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 							return WorkAgain, nil
 						case "0":
 							return WorkAgain, nil
+						case "-1":
+							return WorkStop, nil
 						default:
 							continue
 						}
@@ -187,7 +167,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 
 			for {
 				fmt.Println("")
-				fmt.Println(fmt.Sprintf("%v. Выберите номер объекта, данные которого хотите получить:", c.rl.etypes[entCode.Etype]))
+				fmt.Println(fmt.Sprintf("%v. Выберите номер объекта, данные которого хотите получить:", c.rl.GetEtypeName(entCode.Etype)))
 
 				// соответствие межну консольными номерами сущностей и реальными идентификаторами
 				index := 0
@@ -198,7 +178,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 					mapIndexToEntityID[index] = key
 				}
 
-				entityIndex, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+				entityIndex, err := c.rl.input("Просмотр объекта>>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 				if err != nil {
 					fmt.Println(err.Error())
 					continue
@@ -246,7 +226,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 					fmt.Println("[1] Изменить")
 					fmt.Println("[2] Удалить")
 					fmt.Println("[0] Начать все сначала")
-					againOrSave, err := c.rl.input(">>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
+					againOrSave, err := c.rl.input("Действия с объектом>>", "required,number", `{"required": "Неверный выбор", "number": "Только число"}`)
 					if err != nil {
 						fmt.Println(err.Error())
 						continue
@@ -254,7 +234,40 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 
 					switch againOrSave {
 					case "1":
-						fmt.Println("Не реализовано")
+
+						for propKey, propVal := range ent.Props {
+							field := c.rl.GetField(propVal.FieldId)
+							if ent.Etype == constants.BinaryEntity || ent.Etype == constants.TextEntity {
+								ent.Props[propKey].Value, err = c.rl.edit(field.Name+":", "", field.ValidateRules, field.ValidateMessages)
+							} else {
+								ent.Props[propKey].Value, err = c.rl.edit(field.Name+":", propVal.Value, field.ValidateRules, field.ValidateMessages)
+							}
+						}
+
+						for metaKey, metaVal := range ent.Metainfo {
+							ent.Metainfo[metaKey].Title, err = c.rl.edit("Название метаданных:", metaVal.Title, "required", `{"required": "Укажите название поля метаданных"}`)
+							ent.Metainfo[metaKey].Value, err = c.rl.edit("Значение метаданных:", metaVal.Value, "required", `{"required": "Укажите значение поля метаданных"}`)
+						}
+
+						id, err := c.Sender.SaveEntity(*ent)
+						if err != nil || id <= 0 {
+							return WorkAgain, err
+						}
+
+						if entCode.Etype == constants.BinaryEntity || entCode.Etype == constants.TextEntity {
+							// Если бинарные данные - после редактирования записи на сервере загружаем бинарник на сервер
+							size, err := c.Sender.UploadCryptoBinary(id, ent.Props[0].Value)
+							if err != nil {
+								fmt.Println("При изменении возникли ошибки:" + err.Error())
+								return WorkAgain, err
+							}
+							fmt.Println(fmt.Sprintf("Данные успешно изменены! Загружен файл размером %v байт", size))
+						} else {
+							fmt.Println(fmt.Sprintf("Данные успешно изменены!"))
+						}
+
+						return WorkAgain, nil
+
 					case "2":
 						fmt.Println("Не реализовано")
 					case "0":
@@ -277,4 +290,31 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	}
 
 	return WorkAgain, nil
+}
+
+func (c *GophKeepClient) createMetainfo(metas []*Metainfo) []*Metainfo {
+	for {
+		metaName, err := c.rl.input("Название поля метаданных:", "required", `{"required": "Укажите название поля метаданных"}`)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+
+		metaValue, err := c.rl.input("Значение поля метаданных:", "required", `{"required": "Укажите значение поля метаданных"}`)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+
+		metas = append(metas, &Metainfo{
+			EntityId: 0,
+			Title:    metaName,
+			Value:    metaValue,
+		})
+
+		break
+	}
+
+	return metas
+
 }
