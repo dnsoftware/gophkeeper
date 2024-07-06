@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -145,8 +146,6 @@ func TestBaseViewEntity(t *testing.T) {
 	res, err := client.Base(entCodes)
 	require.Equal(t, "again", res)
 
-	//
-
 	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
 	entCodes = []*EntityCode{&EntityCode{
 		Etype: "binary",
@@ -240,6 +239,280 @@ func TestDelete(t *testing.T) {
 
 	mockReadline.EXPECT().input("Уверены (Y or N)>>", gomock.Any(), gomock.Any()).Return("y", nil)
 	sender.EXPECT().DeleteEntity(gomock.Any()).Return(nil)
+
+	res, err := client.Base(entCodes)
+	require.Equal(t, "again", res)
+
+}
+
+func TestBaseNegative(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	sender := NewMockSender(ctrl)
+
+	controller := gomock.NewController(t)
+	mockReadline := NewMockReadline(controller)
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", errors.New("testerr"))
+	mockReadline.EXPECT().interrupt("1", errors.New("testerr")).Return(loopNone)
+	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("1", errors.New("testerr"))
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("1", nil)
+
+	fieldGroup := []*Field{&Field{
+		Id:               3,
+		Name:             "Номер банковской карты",
+		Etype:            "card",
+		Ftype:            "string",
+		ValidateRules:    "credit_card",
+		ValidateMessages: `{"credit_card": "Неправильный формат номера карты"}`,
+	}}
+	mockReadline.EXPECT().GetFieldsGroup("card").Return(fieldGroup).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("testerr"))
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("testerr"))
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("5", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("5", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("0", nil)
+
+	client, err := NewGophKeepClient(mockReadline, sender)
+	require.NoError(t, err)
+
+	entCodes := []*EntityCode{&EntityCode{
+		Etype: "card",
+		Name:  "Банковская карта",
+	}}
+
+	res, err := client.Base(entCodes)
+	require.Equal(t, "again", res)
+
+}
+
+func TestBaseNegative2(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	sender := NewMockSender(ctrl)
+
+	controller := gomock.NewController(t)
+	mockReadline := NewMockReadline(controller)
+
+	client, err := NewGophKeepClient(mockReadline, sender)
+	require.NoError(t, err)
+
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", nil)
+
+	entCodes := []*EntityCode{&EntityCode{
+		Etype: constants.BinaryEntity,
+		Name:  "Бинарные данные",
+	}}
+
+	fieldGroup := []*Field{&Field{
+		Id:               7,
+		Name:             "Произвольные бинарные данные (путь к файлу)",
+		Etype:            "binary",
+		Ftype:            "path",
+		ValidateRules:    "required",
+		ValidateMessages: `{"required": "Не может быть пустым"}`,
+	}}
+	mockReadline.EXPECT().GetFieldsGroup(constants.BinaryEntity).Return(fieldGroup).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("test", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", nil)
+
+	mockReadline.EXPECT().GetEtypeName("binary").Return("").AnyTimes()
+	mockReadline.EXPECT().GetField(int32(7)).Return(&Field{}).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", errors.New("testerr"))
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("5", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", nil)
+	sender.EXPECT().AddEntity(gomock.Any()).Return(int32(1), nil)
+	sender.EXPECT().UploadCryptoBinary(gomock.Any(), gomock.Any()).Return(int32(1000), errors.New("testerr"))
+
+	res, err := client.Base(entCodes)
+	require.Equal(t, "again", res)
+
+}
+
+func TestBaseActions(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	sender := NewMockSender(ctrl)
+
+	controller := gomock.NewController(t)
+	mockReadline := NewMockReadline(controller)
+
+	client, err := NewGophKeepClient(mockReadline, sender)
+	require.NoError(t, err)
+
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", nil)
+
+	entCodes := []*EntityCode{&EntityCode{
+		Etype: constants.BinaryEntity,
+		Name:  "Бинарные данные",
+	}}
+
+	fieldGroup := []*Field{&Field{
+		Id:               7,
+		Name:             "Произвольные бинарные данные (путь к файлу)",
+		Etype:            "binary",
+		Ftype:            "path",
+		ValidateRules:    "required",
+		ValidateMessages: `{"required": "Не может быть пустым"}`,
+	}}
+	mockReadline.EXPECT().GetFieldsGroup(constants.BinaryEntity).Return(fieldGroup).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("test", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", nil)
+
+	mockReadline.EXPECT().GetEtypeName("binary").Return("").AnyTimes()
+	mockReadline.EXPECT().GetField(int32(7)).Return(&Field{}).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", nil)
+	sender.EXPECT().AddEntity(gomock.Any()).Return(int32(1), errors.New("testerr"))
+
+	res, err := client.Base(entCodes)
+	require.Equal(t, "again", res)
+
+}
+
+func TestBaseActions2(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	sender := NewMockSender(ctrl)
+
+	controller := gomock.NewController(t)
+	mockReadline := NewMockReadline(controller)
+
+	client, err := NewGophKeepClient(mockReadline, sender)
+	require.NoError(t, err)
+
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", nil)
+
+	entCodes := []*EntityCode{&EntityCode{
+		Etype: constants.BinaryEntity,
+		Name:  "Бинарные данные",
+	}}
+
+	fieldGroup := []*Field{&Field{
+		Id:               7,
+		Name:             "Произвольные бинарные данные (путь к файлу)",
+		Etype:            "binary",
+		Ftype:            "path",
+		ValidateRules:    "required",
+		ValidateMessages: `{"required": "Не может быть пустым"}`,
+	}}
+	mockReadline.EXPECT().GetFieldsGroup(constants.BinaryEntity).Return(fieldGroup).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("test", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("2", nil)
+
+	mockReadline.EXPECT().GetEtypeName("binary").Return("").AnyTimes()
+	mockReadline.EXPECT().GetField(int32(7)).Return(&Field{}).AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", nil)
+	sender.EXPECT().AddEntity(gomock.Any()).Return(int32(1), nil)
+	sender.EXPECT().UploadCryptoBinary(gomock.Any(), gomock.Any()).Return(int32(1000), nil)
+
+	res, err := client.Base(entCodes)
+	require.Equal(t, "again", res)
+
+}
+
+func TestBaseActions3(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	sender := NewMockSender(ctrl)
+
+	controller := gomock.NewController(t)
+	mockReadline := NewMockReadline(controller)
+
+	client, err := NewGophKeepClient(mockReadline, sender)
+	require.NoError(t, err)
+
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("2", nil)
+
+	entCodes := []*EntityCode{&EntityCode{
+		Etype: constants.BinaryEntity,
+		Name:  "Бинарные данные",
+	}}
+
+	sender.EXPECT().EntityList(gomock.Any()).Return(nil, errors.New("testerr"))
+
+	res, err := client.Base(entCodes)
+	require.Equal(t, "again", res)
+
+}
+
+func TestBaseActionsNegative(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	sender := NewMockSender(ctrl)
+
+	controller := gomock.NewController(t)
+	mockReadline := NewMockReadline(controller)
+	mockReadline.EXPECT().input("Выберите номер объекта:", "required,number", gomock.Any()).Return("1", nil).AnyTimes()
+	mockReadline.EXPECT().interrupt("1", nil).Return(loopNone)
+	mockReadline.EXPECT().input("Действия для объекта>>", "required,number", gomock.Any()).Return("2", nil)
+
+	entList := make(map[int32]string)
+	entList = map[int32]string{1: "111", 2: "222"}
+	sender.EXPECT().EntityList(gomock.Any()).Return(entList, nil).AnyTimes()
+
+	props := []*Property{&Property{
+		EntityId: 1,
+		FieldId:  1,
+		Value:    "",
+	}}
+
+	sender.EXPECT().Entity(gomock.Any()).Return(&Entity{
+		Id:       1,
+		UserID:   1,
+		Etype:    constants.BinaryEntity,
+		Props:    props,
+		Metainfo: nil,
+	}, nil)
+
+	client, err := NewGophKeepClient(mockReadline, sender)
+	require.NoError(t, err)
+
+	entCodes := []*EntityCode{&EntityCode{
+		Etype: constants.BinaryEntity,
+		Name:  "Бинарные данные",
+	}}
+
+	mockReadline.EXPECT().GetEtypeName(constants.BinaryEntity).Return("").AnyTimes()
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", errors.New("testerr"))
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("bad", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", nil)
+
+	props[0].Value = `{"servername":"/servername","clientname":"/clientname","chunkcount":59}`
+	sender.EXPECT().Entity(gomock.Any()).Return(&Entity{
+		Id:       1,
+		UserID:   1,
+		Etype:    constants.BinaryEntity,
+		Props:    props,
+		Metainfo: nil,
+	}, nil)
+
+	sender.EXPECT().DownloadCryptoBinary(gomock.Any(), gomock.Any()).Return("", errors.New("testerr"))
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", nil)
+	sender.EXPECT().DownloadCryptoBinary(gomock.Any(), gomock.Any()).Return("", nil)
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", errors.New("testerr"))
+	mockReadline.EXPECT().input(gomock.Any(), gomock.Any(), gomock.Any()).Return("1", nil)
+	mockReadline.EXPECT().GetField(gomock.Any()).Return(&Field{}).AnyTimes()
+	mockReadline.EXPECT().edit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("test", nil)
+	sender.EXPECT().SaveEntity(gomock.Any()).Return(int32(2), errors.New("testerr"))
 
 	res, err := client.Base(entCodes)
 	require.Equal(t, "again", res)

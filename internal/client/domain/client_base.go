@@ -210,11 +210,6 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 						continue
 					}
 					ent.Props[0].Value = pathDownload
-
-					if err != nil {
-						fmt.Println(err.Error())
-						continue
-					}
 					c.DisplayEntityBinary(*ent, pathDownload)
 
 				} else {
