@@ -30,12 +30,14 @@ func NewClientConfig() (*ClientConfig, error) {
 	if configFile != "" {
 		rawCfg, err := os.ReadFile(configFile)
 		if err != nil {
-			logger.Log().Fatal(fmt.Sprintf("client config file not found: %s", err))
+			logger.Log().Error(fmt.Sprintf("client config file not found: %s", err))
+			return nil, err
 		}
 
 		err = yaml.Unmarshal(rawCfg, &cfg)
 		if err != nil {
-			logger.Log().Fatal(fmt.Sprintf("failed parsing client config file: %s", err))
+			logger.Log().Error(fmt.Sprintf("failed parsing client config file: %s", err))
+			return nil, err
 		}
 
 	}

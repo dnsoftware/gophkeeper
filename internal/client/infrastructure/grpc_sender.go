@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/chzyer/readline"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -498,47 +496,47 @@ func (t *GRPCSender) GetPassword() string {
 	return t.password
 }
 
-func (t *GRPCSender) Start() {
-
-	ex, err := os.Executable()
-	if err != nil {
-		logger.Log().Fatal(err.Error())
-	}
-	workDir := filepath.Dir(ex)
-
-	rl, err := readline.NewEx(&readline.Config{
-		Prompt:                 "> ",
-		HistoryFile:            workDir + "/logs/" + constants.LogReadline,
-		DisableAutoSaveHistory: true,
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer rl.Close()
-
-	var cmds []string
-	for {
-		line, err := rl.Readline()
-		if err != nil {
-			break
-		}
-		line = strings.TrimSpace(line)
-		if len(line) == 0 {
-			continue
-		}
-		cmds = append(cmds, line)
-		if !strings.HasSuffix(line, ";") {
-			rl.SetPrompt(">>> ")
-			continue
-		}
-		cmd := strings.Join(cmds, "\n")
-		cmds = cmds[:0]
-		rl.SetPrompt("> ")
-		rl.SaveHistory(cmd)
-		println(cmd)
-	}
-
-}
+//func (t *GRPCSender) Start() {
+//
+//	ex, err := os.Executable()
+//	if err != nil {
+//		logger.Log().Fatal(err.Error())
+//	}
+//	workDir := filepath.Dir(ex)
+//
+//	rl, err := readline.NewEx(&readline.Config{
+//		Prompt:                 "> ",
+//		HistoryFile:            workDir + "/logs/" + constants.LogReadline,
+//		DisableAutoSaveHistory: true,
+//	})
+//	if err != nil {
+//		panic(err)
+//	}
+//	defer rl.Close()
+//
+//	var cmds []string
+//	for {
+//		line, err := rl.Readline()
+//		if err != nil {
+//			break
+//		}
+//		line = strings.TrimSpace(line)
+//		if len(line) == 0 {
+//			continue
+//		}
+//		cmds = append(cmds, line)
+//		if !strings.HasSuffix(line, ";") {
+//			rl.SetPrompt(">>> ")
+//			continue
+//		}
+//		cmd := strings.Join(cmds, "\n")
+//		cmds = cmds[:0]
+//		rl.SetPrompt("> ")
+//		rl.SaveHistory(cmd)
+//		println(cmd)
+//	}
+//
+//}
 
 func (t *GRPCSender) EntityList(etype string) (map[int32]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)

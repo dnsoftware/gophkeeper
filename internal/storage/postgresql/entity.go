@@ -114,9 +114,8 @@ func (p *PgStorage) GetEntity(ctx context.Context, id int32) (entity.EntityModel
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return empty, fmt.Errorf("no entity with id: %v", id)
-		} else {
-			return empty, err
 		}
+		return empty, err
 	}
 
 	ent := entity.EntityModel{
@@ -180,9 +179,8 @@ func (p *PgStorage) GetBinaryFilenameByEntityID(ctx context.Context, entityID in
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", fmt.Errorf("no property with entityID: %v", entityID)
-		} else {
-			return "", err
 		}
+		return "", err
 	}
 
 	return filename, nil
@@ -204,9 +202,8 @@ func (p *PgStorage) SetChunkCountForCryptoBinary(ctx context.Context, entityID i
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("no property with entityID: %v", entityID)
-		} else {
-			return err
 		}
+		return err
 	}
 
 	fd := &BinaryFileDataProperty{}

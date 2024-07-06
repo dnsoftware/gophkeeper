@@ -27,9 +27,8 @@ func (p *PgStorage) GetUser(ctx context.Context, login string) (int, time.Time, 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, time.Time{}, nil
-		} else {
-			return 0, time.Time{}, fmt.Errorf("GetUser: %w", err)
 		}
+		return 0, time.Time{}, fmt.Errorf("GetUser: %w", err)
 	}
 
 	return id, createdAt, nil
@@ -80,9 +79,8 @@ func (p *PgStorage) LoginUser(ctx context.Context, login string, password string
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, constants.ErrBadPassword
-		} else {
-			return 0, err.Error()
 		}
+		return 0, err.Error()
 	}
 
 	return id, ""

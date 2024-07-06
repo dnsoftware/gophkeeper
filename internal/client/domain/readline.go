@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -79,9 +78,12 @@ func (r *CLIReader) Registration() (string, string, error) {
 
 	for {
 		pswd, err = r.ReadPasswordWithConfig(r.passwordCfg)
-
 		if r.interrupt(string(pswd), err) == loopBreak {
 			return "", "", fmt.Errorf("interrupt")
+		}
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
 		}
 
 		if len(pswd) == 0 {
@@ -91,6 +93,14 @@ func (r *CLIReader) Registration() (string, string, error) {
 
 		r.Writeln("Повторите ввод пароля")
 		pswd2, err = r.ReadPasswordWithConfig(r.passwordCfg)
+		if r.interrupt(string(pswd), err) == loopBreak {
+			return "", "", fmt.Errorf("interrupt")
+		}
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+
 		if len(pswd2) == 0 {
 			r.Writeln("Пароль не может быть пустым!")
 			continue
@@ -347,21 +357,4 @@ func FilterInput(r rune) (rune, bool) {
 		return r, false
 	}
 	return r, true
-}
-
-//func Usage(w io.Writer) {
-//	io.WriteString(w, "commands:\n")
-//	io.WriteString(w, Completer.Tree("    "))
-//}
-
-// Function constructor - constructs new function for listing given directory
-func ListFiles(path string) func(string) []string {
-	return func(line string) []string {
-		names := make([]string, 0)
-		files, _ := ioutil.ReadDir(path)
-		for _, f := range files {
-			names = append(names, f.Name())
-		}
-		return names
-	}
 }

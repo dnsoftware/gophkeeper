@@ -12,9 +12,13 @@ import (
 
 func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 
+	if len(entCodes) == 0 {
+		return WorkStop, fmt.Errorf("коды сущностей не указаны")
+	}
+
 	fmt.Println("Доступна работа со следующими объектами:")
 	for i, val := range entCodes {
-		fmt.Println(fmt.Sprintf("[%v] %v", i+1, val.Name))
+		fmt.Printf("[%v] %v\n", i+1, val.Name)
 	}
 
 	var objStr string
@@ -33,7 +37,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	objIndex, _ := strconv.Atoi(objStr)
 	entCode := entCodes[objIndex-1]
 	fmt.Println("")
-	fmt.Println(fmt.Sprintf(`Для объекта "%v" доступны следующие действия:`, entCode.Name))
+	fmt.Printf(`Для объекта "%v" доступны следующие действия:\n`, entCode.Name)
 	fmt.Println("[1] Добавить новый")
 	fmt.Println("[2] Получить сохраненный")
 	fmt.Println("[0] Начать сначала")
@@ -136,9 +140,9 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 									fmt.Println("При сохранении возникли ошибки:" + err.Error())
 									return WorkAgain, err
 								}
-								fmt.Println(fmt.Sprintf("Данные успешно сохранены! Загружен файл размером %v байт", size))
+								fmt.Printf("Данные успешно сохранены! Загружен файл размером %v байт\n", size)
 							} else {
-								fmt.Println(fmt.Sprintf("Данные успешно сохранены!"))
+								fmt.Printf("Данные успешно сохранены!\n")
 							}
 
 							return WorkAgain, nil
@@ -167,15 +171,14 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 			}
 
 			for {
-				fmt.Println("")
-				fmt.Println(fmt.Sprintf("%v. Выберите номер объекта, данные которого хотите получить:", c.rl.GetEtypeName(entCode.Etype)))
+				fmt.Printf("\n%v. Выберите номер объекта, данные которого хотите получить:\n", c.rl.GetEtypeName(entCode.Etype))
 
 				// соответствие межну консольными номерами сущностей и реальными идентификаторами
 				index := 0
 				mapIndexToEntityID := make(map[int]int32, len(list))
 				for key, val := range list {
 					index++
-					fmt.Println(fmt.Sprintf("[%v] %v", index, val))
+					fmt.Printf("[%v] %v\n", index, val)
 					mapIndexToEntityID[index] = key
 				}
 
@@ -262,9 +265,9 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 								fmt.Println("При изменении возникли ошибки:" + err.Error())
 								return WorkAgain, err
 							}
-							fmt.Println(fmt.Sprintf("Данные успешно изменены! Загружен файл размером %v байт", size))
+							fmt.Printf("Данные успешно изменены! Загружен файл размером %v байт\n", size)
 						} else {
-							fmt.Println(fmt.Sprintf("Данные успешно изменены!"))
+							fmt.Printf("Данные успешно изменены!\n")
 						}
 
 						return WorkAgain, nil

@@ -45,9 +45,8 @@ func (p *PgStorage) GetFieldByEtypeAndName(ctx context.Context, etype string, na
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, "", nil
-		} else {
-			return 0, "", err
 		}
+		return 0, "", err
 	}
 
 	return id, ftype, nil
@@ -63,9 +62,8 @@ func (p *PgStorage) IsFieldType(ctx context.Context, id int32, ftype string) (bo
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
-		} else {
-			return false, err
 		}
+		return false, err
 	}
 
 	return true, nil

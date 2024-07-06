@@ -3,10 +3,9 @@ package domain
 import (
 	"fmt"
 	"io"
-	"log"
 )
 
-// Работа с командной строкой
+// Readline Работа с командной строкой
 type Readline interface {
 	input(prompt string, validateRules string, validateMessages string) (string, error)
 	edit(prompt string, what string, validateRules string, validateMessages string) (string, error)
@@ -104,20 +103,16 @@ func NewGophKeepClient(readline Readline, sender Sender) (*GophKeepClient, error
 
 }
 
-func (c *GophKeepClient) Start() {
-	defer c.rl.Close()
-
-	log.SetOutput(c.rl.Stderr())
+func (c *GophKeepClient) Start() error {
 
 	var token string // токен авторизации
 
 	// Логин или регистрация
 	for {
-		fmt.Println("Нажмите [Enter] для входа или \"r\" для регистрации  ")
-		line, err := c.rl.input(">>", "", "{}")
+		line, err := c.rl.input(`Нажмите [Enter] для входа или "r" для регистрации>>`, "", "{}")
 		if err != nil {
-			c.rl.Writeln(err.Error())
-			return
+			fmt.Println(err.Error())
+			return err
 		}
 
 		// если не регистрация - переходим к вводу логина и пароля для входа
@@ -128,12 +123,12 @@ func (c *GophKeepClient) Start() {
 		// Регистрация
 		login, password, err := c.rl.Registration()
 		if err != nil {
-			return
+			return err
 		}
 
 		token, err = c.Sender.Registration(login, password, password)
 		if err != nil {
-			c.rl.Writeln("Sender.Registration: " + err.Error())
+			fmt.Println("Sender.Registration: " + err.Error())
 			continue
 		}
 
@@ -146,12 +141,12 @@ func (c *GophKeepClient) Start() {
 		for {
 			login, password, err := c.rl.Login()
 			if err != nil {
-				return
+				return err
 			}
 
 			token, err = c.Sender.Login(login, password)
 			if err != nil {
-				c.rl.Writeln(err.Error())
+				fmt.Println(err.Error())
 				continue
 			}
 
@@ -163,7 +158,7 @@ func (c *GophKeepClient) Start() {
 	entCodes, err := c.Sender.EntityCodes()
 
 	if err != nil {
-		c.rl.Writeln(fmt.Sprintf("Ошибка загрузки сущностей: %v", err))
+		fmt.Printf("Ошибка загрузки сущностей: %v\n", err)
 	}
 	for _, val := range entCodes {
 		c.rl.SetEtypeName(val.Etype, val.Name)
@@ -173,7 +168,7 @@ func (c *GophKeepClient) Start() {
 	for _, val := range entCodes {
 		fields, err := c.Sender.Fields(val.Etype)
 		if err != nil {
-			c.rl.Writeln(fmt.Sprintf("Ошибка загрузки полей с описаниями: %v", err))
+			fmt.Printf("Ошибка загрузки полей с описаниями: %v\n", err)
 		}
 		c.rl.MakeFieldsDescription(fields)
 	}
@@ -195,7 +190,7 @@ func (c *GophKeepClient) Start() {
 		}
 	}
 
-	//exit:
+	return nil
 }
 
 // DisplayEntity отобразить сущность в консоли
