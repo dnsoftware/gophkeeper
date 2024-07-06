@@ -7,7 +7,7 @@ import (
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 )
 
-func (g *GRPCServer) EntityCodes(ctx context.Context, in *pb.EntityCodesRequest) (*pb.EntityCodesResponse, error) {
+func (g *GRPCServer) EntityCodes(ctx context.Context, _ *pb.EntityCodesRequest) (*pb.EntityCodesResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, constants.DBContextTimeout)
 	defer cancel()
 

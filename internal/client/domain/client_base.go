@@ -37,7 +37,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	objIndex, _ := strconv.Atoi(objStr)
 	entCode := entCodes[objIndex-1]
 	fmt.Println("")
-	fmt.Printf(`Для объекта "%v" доступны следующие действия:\n`, entCode.Name)
+	fmt.Printf("Для объекта \"%v\" доступны следующие действия:\n", entCode.Name)
 	fmt.Println("[1] Добавить новый")
 	fmt.Println("[2] Получить сохраненный")
 	fmt.Println("[0] Начать сначала")
@@ -100,7 +100,6 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 					prefix = "Еще метаданные"
 				case "2":
 					nextTag = true
-					break
 				case "0":
 					return WorkAgain, nil
 

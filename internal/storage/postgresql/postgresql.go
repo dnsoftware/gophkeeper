@@ -27,7 +27,3 @@ func NewPostgresqlStorage(dsn string) (*PgStorage, error) {
 
 	return ps, nil
 }
-
-//func (p *PgStorage) GetEntityProperties(code string) []EntityProps {
-//
-//}
