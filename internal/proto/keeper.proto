@@ -4,14 +4,14 @@ package proto;
 
 option go_package = "internal/proto";
 
-// пинг сервера
+// Пинг сервера
 message PingRequest {
-  string message = 1;           // ping
+  string message = 1;           // ping (некоторое тестовое сообщение на сервер)
 }
 
-// ответ на пинг сервера
+// Ответ на пинг сервера
 message PingResponse {
-  string message = 1;           // pong
+  string message = 1;           // pong (некоторое тестовое сообщение с сервера)
 }
 
 /******************* регистрация и вход *********************/
@@ -43,7 +43,7 @@ message LoginResponse {
 
 /******************** справочник сущностей ********************/
 
-// объект "код сущности-название"
+// Объект "код сущности-название"
 message EntityCode {
   string etype = 1; // тип сущности: card, text, logopas, binary
   string name = 2;  // название сущности
@@ -56,15 +56,15 @@ message EntityCodesRequest {
 
 // Ответ на запрос списка доступных к добавлению типов сущностей (таблица entity_codes)
 message EntityCodesResponse {
-  repeated EntityCode entity_codes = 1;
+  repeated EntityCode entity_codes = 1; // массив (справочник) кодов сущностей
 }
 
 /****************************** описание полей свойств сущности ******************************/
 
-// объект "Поле сущности"
+// Объект "Поле сущности"
 message Field {
   int32 id = 1;                 // код поля
-  string etype = 2;             // тип сущности (card? binary и т.д.)
+  string etype = 2;             // тип сущности (card, binary и т.д.)
   string name = 3;              // наименование поля
   string ftype = 4;             // тип поля (string, path и т.п.)
   string validate_rules = 5;    // правила валидации
@@ -78,7 +78,7 @@ message FieldsRequest {
 
 // Ответ на запрос списка характеристик полей сущности
 message FieldsResponse {
-  repeated Field fields = 1;
+  repeated Field fields = 1; // массив описаний полей сущности
 }
 
 /********************************* сущность (банковская карта, логин/пароль, текст, бинарные данные) **********************************/
@@ -155,9 +155,10 @@ message EntityResponse {
 
 // Запрос на удаление сущности
 message DeleteEntityRequest {
-  int32 id = 1;     // Идентификатор сущности
+  int32 id = 1;     // идентификатор сущности
 }
 
+// Ответ на запрос на удаление сущности
 message DeleteEntityResponse {
   string error = 1;            // если возникла ошибка - описание ошибки, иначе - пустая строка
 }
@@ -168,8 +169,9 @@ message DownloadBinRequest {
   int32 entity_id = 1;       // код сущности для которого будут загружаться бинарные данные
 }
 
+// Ответ на запрос загрузки бинарных данных с сервера
 message DownloadBinResponse {
-  bytes chunk_data = 1;    // chunk
+  bytes chunk_data = 1;    // chunk (фрагмент бинарных данных)
 }
 
 // Получение списка сущностей пользователя определенного типа
@@ -177,30 +179,46 @@ message EntityListRequest {
   string etype = 1;               // тип сущности: card, text, logopas, binary и т.д.
 }
 
+// Ответ на запрос получения списка сущностей пользователя определенного типа
 message EntityListResponse {
-  map<int32, string> list = 1; // карта: код_сущности:строка_с_описанием
+  map<int32, string> list = 1; // карта (код_сущности:строка_с_описанием)
 }
 
-/****************************************************/
+/************************* Вызываемые удаленные процедуры ***************************/
 
+// Вызываемые удаленные процедуры
 service Keeper {
+  // Проверка связи с сервером
   rpc Ping(PingRequest) returns (PingResponse);
 
+  // Регистрация пользователя
   rpc Registration(RegisterRequest) returns (RegisterResponse);
+  // Вход пользователя
   rpc Login(LoginRequest) returns (LoginResponse);
 
+  // Получение справочника кодов сущностей
   rpc EntityCodes(EntityCodesRequest) returns (EntityCodesResponse);
+  // Получение описания полей сущностей
   rpc Fields(FieldsRequest) returns (FieldsResponse);
 
+  // Добавление сущности
   rpc AddEntity(AddEntityRequest) returns (AddEntityResponse);
+  // Сохранение отредактированной сущности
   rpc SaveEditEntity(SaveEntityRequest) returns (SaveEntityResponse);
+  // Удаление сущности
   rpc DeleteEntity(DeleteEntityRequest) returns (DeleteEntityResponse);
+  // Выгрузка незашифрованных бинарных данных на сервер
   rpc UploadBinary(stream UploadBinRequest) returns (UploadBinResponse);
+  // Выгрузка зашифрованных бинарных данных на сервер
   rpc UploadCryptoBinary(stream UploadBinRequest) returns (UploadBinResponse);
 
+  // Получение сущности
   rpc Entity(EntityRequest) returns (EntityResponse);
+  // Загрузка незашифрованных бинарных данных с сервера
   rpc DownloadBinary(DownloadBinRequest) returns (stream DownloadBinResponse);
+  // Загрузка зашифрованных бинарных данных с сервера
   rpc DownloadCryptoBinary(DownloadBinRequest) returns (stream DownloadBinResponse);
 
+  // Получение списка доступных к просмотру/редактированию/удалению сущностей
   rpc EntityList(EntityListRequest) returns (EntityListResponse);
 }

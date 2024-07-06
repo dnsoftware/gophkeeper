@@ -30,7 +30,8 @@ func TestStart(t *testing.T) {
 	client, err := NewGophKeepClient(mockReadline, sender)
 	require.NoError(t, err)
 
-	err = client.Start()
+	stopChan := make(chan bool, 1)
+	err = client.Start(stopChan)
 	require.NoError(t, err)
 
 	mockReadline.EXPECT().SetEtypeName("card", "Банковская карта").Return()
@@ -51,7 +52,7 @@ func TestStart(t *testing.T) {
 	mockReadline.EXPECT().input(`Выберите номер объекта:`, gomock.Any(), gomock.Any()).Return("", fmt.Errorf("testerror"))
 	mockReadline.EXPECT().interrupt("", gomock.Any()).Return(loopBreak)
 
-	err = client.Start()
+	err = client.Start(stopChan)
 	require.NoError(t, err)
 
 }
@@ -69,19 +70,20 @@ func TestStartNegative(t *testing.T) {
 	client, err := NewGophKeepClient(mockReadline, sender)
 	require.NoError(t, err)
 
-	err = client.Start()
+	stopChan := make(chan bool, 1)
+	err = client.Start(stopChan)
 	require.Error(t, err)
 
 	mockReadline.EXPECT().input(`Нажмите [Enter] для входа или "r" для регистрации>>`, "", gomock.Any()).Return("q", nil)
 	mockReadline.EXPECT().Login().Return("login", "password", errors.New("testerr"))
 
-	err = client.Start()
+	err = client.Start(stopChan)
 	require.Error(t, err)
 
 	mockReadline.EXPECT().input(`Нажмите [Enter] для входа или "r" для регистрации>>`, "", gomock.Any()).Return("r", nil)
 	mockReadline.EXPECT().Registration().Return("login", "password", errors.New("testerr"))
 
-	err = client.Start()
+	err = client.Start(stopChan)
 	require.Error(t, err)
 
 	mockReadline.EXPECT().input(`Нажмите [Enter] для входа или "r" для регистрации>>`, "", gomock.Any()).Return("r", nil)
@@ -89,7 +91,7 @@ func TestStartNegative(t *testing.T) {
 	sender.EXPECT().Registration("login", "password", "password").Return("", errors.New("testerr"))
 	mockReadline.EXPECT().input(`Нажмите [Enter] для входа или "r" для регистрации>>`, "", gomock.Any()).Return("q", errors.New("testerr"))
 
-	err = client.Start()
+	err = client.Start(stopChan)
 	require.Error(t, err)
 
 	mockReadline.EXPECT().input(`Нажмите [Enter] для входа или "r" для регистрации>>`, "", gomock.Any()).Return("q", nil)
@@ -100,7 +102,7 @@ func TestStartNegative(t *testing.T) {
 	sender.EXPECT().EntityCodes().Return(nil, errors.New("testerr"))
 	sender.EXPECT().Fields("card").Return(nil, errors.New("testerr")).AnyTimes()
 
-	err = client.Start()
+	err = client.Start(stopChan)
 	require.NoError(t, err)
 
 }

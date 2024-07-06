@@ -19,6 +19,7 @@ const (
 	ChunkSize     int    = 10240         // chunk size для потоковой передачи бинарных данных
 	FileStorage   string = "filestorage" // папка куда скачиваются файлы пользователя на клиенте
 	UserUD        string = "userID"      // идентификатор кода пользователя в GRPC контексте сервера
+	CharCtrlC     rune   = 3             // Код нажатия Ctrl+C
 )
 
 // типы сущностей

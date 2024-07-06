@@ -26,13 +26,15 @@ type GRPCSender struct {
 	token     string
 	password  string
 	SecretKey string
+	uploadDir string
 }
 
 // NewGRPCSender обмен данными с сервером
-func NewGRPCSender(serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*GRPCSender, *grpc.ClientConn, error) {
+func NewGRPCSender(uploadDir string, serverAddress string, secretKey string, creds credentials.TransportCredentials, opts ...grpc.DialOption) (*GRPCSender, *grpc.ClientConn, error) {
 
 	kc := &GRPCSender{
 		SecretKey: secretKey,
+		uploadDir: uploadDir,
 	}
 
 	// перехватчики
@@ -301,15 +303,15 @@ func (t *GRPCSender) DownloadBinary(entityId int32, fileName string) (string, er
 		return "", err
 	}
 
-	wd, _ := os.Getwd()
-	parts := strings.Split(wd, "internal")
-	uploadDir := parts[0] + "cmd/client/" + constants.FileStorage
-	err = os.MkdirAll(uploadDir, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
+	//wd, _ := os.Getwd()
+	//parts := strings.Split(wd, "internal")
+	//uploadDir := parts[0] + "cmd/client/" + constants.FileStorage
+	//err = os.MkdirAll(uploadDir, os.ModePerm)
+	//if err != nil {
+	//	return "", err
+	//}
 
-	uploadFile := uploadDir + "/" + fmt.Sprintf("%v_", time.Now().Unix()) + fileName
+	uploadFile := t.uploadDir + "/" + fmt.Sprintf("%v_", time.Now().Unix()) + fileName
 	f, err := os.OpenFile(uploadFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return "", err
@@ -403,7 +405,7 @@ func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (stri
 
 	wd, _ := os.Getwd()
 	parts := strings.Split(wd, "internal")
-	uploadDir := parts[0] + "/cmd/client/" + constants.FileStorage
+	uploadDir := parts[0] + "/" + constants.FileStorage
 	uploadDir = strings.Replace(uploadDir, "//", "/", -1)
 	err = os.MkdirAll(uploadDir, os.ModePerm)
 	if err != nil {

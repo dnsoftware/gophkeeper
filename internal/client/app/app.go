@@ -30,11 +30,20 @@ func ClientRun() {
 		logger.Log().Fatal(err.Error())
 	}
 
-	var opts []grpc.DialOption
-	sender, _, err := infrastructure.NewGRPCSender(cfg.ServerAddress, cfg.SecretKey, creds, opts...)
+	// Директория для загрузки файлов с сервера
+	uploadDir, err := domain.FilestorageDir()
 	if err != nil {
 		logger.Log().Fatal(err.Error())
 	}
+
+	var opts []grpc.DialOption
+	sender, _, err := infrastructure.NewGRPCSender(uploadDir, cfg.ServerAddress, cfg.SecretKey, creds, opts...)
+	if err != nil {
+		logger.Log().Fatal(err.Error())
+	}
+
+	stopChan := make(chan bool, 1)
+	filter := domain.NewFilter(uploadDir, stopChan)
 
 	rl, err := domain.NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
@@ -44,7 +53,7 @@ func ClientRun() {
 		EOFPrompt:       "exit",
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: domain.FilterInput,
+		FuncFilterInputRune: filter.FilterInput,
 	})
 	if err != nil {
 		logger.Log().Fatal(err.Error())
@@ -55,5 +64,5 @@ func ClientRun() {
 		logger.Log().Fatal(err.Error())
 	}
 
-	client.Start()
+	client.Start(stopChan)
 }

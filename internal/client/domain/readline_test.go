@@ -12,8 +12,13 @@ import (
 
 func TestRegistration(t *testing.T) {
 
-	r, w := io.Pipe()
+	uploadDir, err := FilestorageDir()
+	require.NoError(t, err)
 
+	stopChan := make(chan bool, 1)
+	filter := NewFilter(uploadDir, stopChan)
+
+	r, w := io.Pipe()
 	rl, err := NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
 		HistoryFile:     "/tmp/readline.tmp",
@@ -24,7 +29,7 @@ func TestRegistration(t *testing.T) {
 		//Stdout:          w,
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: FilterInput,
+		FuncFilterInputRune: filter.FilterInput,
 	})
 
 	// позитивный тест, логин и пароль проходят валидацию
@@ -102,8 +107,13 @@ func TestRegistration(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 
-	r, w := io.Pipe()
+	uploadDir, err := FilestorageDir()
+	require.NoError(t, err)
 
+	stopChan := make(chan bool, 1)
+	filter := NewFilter(uploadDir, stopChan)
+
+	r, w := io.Pipe()
 	rl, err := NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
 		HistoryFile:     "/tmp/readline.tmp",
@@ -114,7 +124,7 @@ func TestLogin(t *testing.T) {
 		//Stdout:          w,
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: FilterInput,
+		FuncFilterInputRune: filter.FilterInput,
 	})
 
 	// позитивный тест, логин и пароль проходят валидацию
@@ -166,8 +176,13 @@ func TestLogin(t *testing.T) {
 }
 
 func TestEdit(t *testing.T) {
-	r, w := io.Pipe()
+	uploadDir, err := FilestorageDir()
+	require.NoError(t, err)
 
+	stopChan := make(chan bool, 1)
+	filter := NewFilter(uploadDir, stopChan)
+
+	r, w := io.Pipe()
 	rl, _ := NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
 		HistoryFile:     "/tmp/readline.tmp",
@@ -178,10 +193,9 @@ func TestEdit(t *testing.T) {
 		//Stdout:          w,
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: FilterInput,
+		FuncFilterInputRune: filter.FilterInput,
 	})
 
-	var err error
 	newval := ""
 	go func() {
 		newval, err = rl.edit("test", "test", "required", `{"required": "Не может быть пустым"}`)
@@ -209,8 +223,13 @@ func TestEdit(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	r, _ := io.Pipe()
+	uploadDir, err := FilestorageDir()
+	require.NoError(t, err)
 
+	stopChan := make(chan bool, 1)
+	filter := NewFilter(uploadDir, stopChan)
+
+	r, _ := io.Pipe()
 	rl, _ := NewCLIReadline(&readline.Config{
 		Prompt:          "\033[31m»\033[0m ",
 		HistoryFile:     "/tmp/readline.tmp",
@@ -221,7 +240,7 @@ func TestGet(t *testing.T) {
 		//Stdout:          w,
 
 		HistorySearchFold:   true,
-		FuncFilterInputRune: FilterInput,
+		FuncFilterInputRune: filter.FilterInput,
 	})
 
 	rl.SetEtypeName("card", "карта")

@@ -350,11 +350,11 @@ func (r *CLIReader) Stderr() io.Writer {
 //	readline.PcItem("sleep"),
 //)
 
-func FilterInput(r rune) (rune, bool) {
-	switch r {
-	// block CtrlZ feature
-	case readline.CharCtrlZ:
-		return r, false
-	}
-	return r, true
-}
+//func FilterInput(r rune) (rune, bool) {
+//	switch r {
+//	// block CtrlZ feature
+//	case readline.CharCtrlZ:
+//		return r, false
+//	}
+//	return r, true
+//}

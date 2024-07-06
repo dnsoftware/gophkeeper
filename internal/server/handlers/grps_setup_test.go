@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	configclient "github.com/dnsoftware/gophkeeper/internal/client/config"
+	"github.com/dnsoftware/gophkeeper/internal/client/domain"
 	domainclient "github.com/dnsoftware/gophkeeper/internal/client/infrastructure"
 	"github.com/dnsoftware/gophkeeper/internal/server/config"
 	"github.com/dnsoftware/gophkeeper/internal/server/domain/entity"
@@ -97,9 +98,14 @@ func setupFull(cfg config.ServerConfig, cfgClient configclient.ClientConfig) (*d
 		return nil, nil, err
 	}
 
+	uploadDir, err := domain.FilestorageDir()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithContextDialer(bufDialer))
-	client, conn, err := domainclient.NewGRPCSender(cfg.ServerAddress, cfgClient.SecretKey, creds, opts...)
+	client, conn, err := domainclient.NewGRPCSender(uploadDir, cfg.ServerAddress, cfgClient.SecretKey, creds, opts...)
 
 	return client, conn, nil
 }

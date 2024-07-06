@@ -3,6 +3,9 @@ package domain
 import (
 	"fmt"
 	"io"
+	"os"
+
+	"github.com/dnsoftware/gophkeeper/internal/constants"
 )
 
 // Readline Работа с командной строкой
@@ -103,7 +106,7 @@ func NewGophKeepClient(readline Readline, sender Sender) (*GophKeepClient, error
 
 }
 
-func (c *GophKeepClient) Start() error {
+func (c *GophKeepClient) Start(stopChan chan bool) error {
 
 	var token string // токен авторизации
 
@@ -174,22 +177,29 @@ func (c *GophKeepClient) Start() error {
 	}
 
 	/************** Основная логика ************/
+	go func() {
+		for {
+			status, err := c.Base(entCodes)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
 
-	for {
-		status, err := c.Base(entCodes)
-		if err != nil {
-			fmt.Println(err.Error())
+			if status == WorkAgain {
+				continue
+			}
+
+			if status == WorkStop {
+				break
+			}
+
 		}
 
-		if status == WorkAgain {
-			continue
-		}
+		stopChan <- true
+	}()
 
-		if status == WorkStop {
-			break
-		}
-	}
+	<-stopChan
 
+	fmt.Println("Программа завершена!")
 	return nil
 }
 
@@ -215,4 +225,15 @@ func (c *GophKeepClient) DisplayEntityBinary(ent Entity, filePath string) {
 		fmt.Println("      " + val.Title + ": " + val.Value)
 	}
 	fmt.Println("------------------------")
+}
+
+func FilestorageDir() (string, error) {
+	wd, _ := os.Getwd()
+	uploadDir := wd + "/" + constants.FileStorage
+	err := os.MkdirAll(uploadDir, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	return uploadDir, nil
 }
