@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 )
@@ -230,6 +231,12 @@ func (c *GophKeepClient) DisplayEntityBinary(ent Entity, filePath string) {
 func FilestorageDir() (string, error) {
 	wd, _ := os.Getwd()
 	uploadDir := wd + "/" + constants.FileStorage
+
+	if strings.Contains(wd, "/internal/") {
+		parts := strings.Split(wd, "internal")
+		uploadDir = parts[0] + "cmd/client/" + constants.FileStorage
+	}
+
 	err := os.MkdirAll(uploadDir, os.ModePerm)
 	if err != nil {
 		return "", err
