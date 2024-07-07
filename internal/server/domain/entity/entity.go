@@ -1,3 +1,6 @@
+/*
+Package entity основная логика работы сервера
+*/
 package entity
 
 import (
@@ -20,55 +23,69 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
+// EntityRepo интерфейс работы с базой данных сущности
 type EntityRepo interface {
+	// CreateEntity создание сущности
 	CreateEntity(ctx context.Context, entity EntityModel) (int32, error)
+	// UpdateEntity обновление (редактирование) существующей сущности
 	UpdateEntity(ctx context.Context, entity EntityModel) error
+	// DeleteEntity удаление сущности
 	DeleteEntity(ctx context.Context, id int32, userID int32) error
+	// GetEntity получение сущности
 	GetEntity(ctx context.Context, id int32) (EntityModel, error)
+	// GetBinaryFilenameByEntityID получение бинарных данных из файла по ID сущности
 	GetBinaryFilenameByEntityID(ctx context.Context, entityID int32) (string, error)
+	// SetChunkCountForCryptoBinary сохранение количества частей, на которые разбит файл с бинарными данными
 	SetChunkCountForCryptoBinary(ctx context.Context, entityID int32, chunkCount int32) error
+	// GetEntityListByType получение списка сущностей определенного типа
 	GetEntityListByType(ctx context.Context, etype string, userID int32) (map[int32][]string, error)
 }
 
+// FieldRepo интерфейс работы с базой данных (таблицей) описаний полей сущностей
 type FieldRepo interface {
 	IsFieldType(ctx context.Context, id int32, ftype string) (bool, error)
 }
 
+// Property свойство сущности
 type Property struct {
-	ID       int32
-	EntityID int32
-	FieldID  int32
-	Value    string
+	ID       int32  // уникальный ID
+	EntityID int32  // код сущности
+	FieldID  int32  // код описания поля
+	Value    string // значение свойства
 }
 
+// Metainfo метаинформация сущности
 type Metainfo struct {
-	ID       int32
-	EntityID int32
-	Title    string
-	Value    string
+	ID       int32  // уникальный ID
+	EntityID int32  // код сущности
+	Title    string // название метаинформации
+	Value    string // значение метаинформации
 }
 
+// EntityModel данные сущности
 type EntityModel struct {
-	ID       int32
-	UserID   int32
-	Etype    string
-	Props    []Property
-	Metainfo []Metainfo
+	ID       int32      // уникальный ID
+	UserID   int32      // код пользователя
+	Etype    string     // тип сущности
+	Props    []Property // набор свойства сущности
+	Metainfo []Metainfo // набор метаинформации по сущности
 }
 
+// Entity все манипуляции с сущностями (получение, добавление, удаление, редкатирование)
 type Entity struct {
-	repoEntity EntityRepo
-	repoField  FieldRepo
+	repoEntity EntityRepo // работа с хранилищем сущностей
+	repoField  FieldRepo  // работа с хранилищем описаний полей сущностей
 }
 
 // BinaryFileProperty Данные в поле свойства бинарной сущности содержат JSON в формате:
 // {"servername": "имя файла на сервере (полный путь), "clientname": "только имя файла, под которым его грузили с клиента", "chunkcount": "кол-во фрагментов на которые разбит файл"}
 type BinaryFileProperty struct {
-	Servername string `json:"servername"`
-	Clientname string `json:"clientname"`
-	Chunkcount int32  `json:"chunkcount"`
+	Servername string `json:"servername"` // путь с файлу сущности на сервере
+	Clientname string `json:"clientname"` // имя файла на клиенте
+	Chunkcount int32  `json:"chunkcount"` // кол-во частей на которые разбит файл
 }
 
+// NewEntity создание сущности
 func NewEntity(repoEntity EntityRepo, repoField FieldRepo) (*Entity, error) {
 	e := &Entity{
 		repoEntity: repoEntity,
@@ -78,6 +95,7 @@ func NewEntity(repoEntity EntityRepo, repoField FieldRepo) (*Entity, error) {
 	return e, nil
 }
 
+// AddEntity добавление сущности
 func (e *Entity) AddEntity(ctx context.Context, entity EntityModel) (int32, error) {
 
 	// если среди добавляемых свойств есть ftype=path (означает что данные должны быть сохранены в файле)
@@ -126,6 +144,7 @@ func (e *Entity) AddEntity(ctx context.Context, entity EntityModel) (int32, erro
 	return id, nil
 }
 
+// Entity получение сущности
 func (e *Entity) Entity(ctx context.Context, id int32) (*EntityModel, error) {
 
 	ent, err := e.repoEntity.GetEntity(ctx, id)
@@ -207,6 +226,7 @@ func (e *Entity) SaveEditEntity(ctx context.Context, entity EntityModel) error {
 	return nil
 }
 
+// DeleteEntity удаление сущности
 func (e *Entity) DeleteEntity(ctx context.Context, id int32, userID int32) error {
 
 	// Получаем удаляемую сущность
@@ -239,6 +259,7 @@ func (e *Entity) DeleteEntity(ctx context.Context, id int32, userID int32) error
 	return nil
 }
 
+// UploadBinary загрузка незашифрованных бинарных данных (клиент -> сервер)
 func (e *Entity) UploadBinary(stream pb.Keeper_UploadBinaryServer) (int32, error) {
 
 	var uploadSize int32
@@ -299,6 +320,7 @@ func (e *Entity) UploadBinary(stream pb.Keeper_UploadBinaryServer) (int32, error
 
 }
 
+// DownloadBinary отдача незашифрованных бинарных данных клиенту (сервер -> клиент)
 func (e *Entity) DownloadBinary(entityID int32, stream pb.Keeper_DownloadBinaryServer) error {
 	ctx := context.Background()
 
@@ -350,6 +372,7 @@ func (e *Entity) DownloadBinary(entityID int32, stream pb.Keeper_DownloadBinaryS
 
 /************************************ Зашифрованные бинарные фрагменты  *************************************/
 
+// UploadCryptoBinary получение зашифрованных бинарных данных с клиента (клиент -> сервер)
 func (e *Entity) UploadCryptoBinary(stream pb.Keeper_UploadCryptoBinaryServer) (int32, error) {
 
 	var uploadSize int32
@@ -430,6 +453,7 @@ func (e *Entity) UploadCryptoBinary(stream pb.Keeper_UploadCryptoBinaryServer) (
 
 }
 
+// DownloadCryptoBinary отдача зашифрованных бинарных данных клиенту (сервер -> клиент)
 func (e *Entity) DownloadCryptoBinary(entityID int32, stream pb.Keeper_DownloadCryptoBinaryServer) error {
 	ctx := context.Background()
 

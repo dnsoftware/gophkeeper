@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// Encrypt Расшифровка данных в текстовом виде
 func Encrypt(plaintext string, secretKey string) string {
 	aes, err := aes.NewCipher([]byte(secretKey))
 	if err != nil {
@@ -35,6 +36,7 @@ func Encrypt(plaintext string, secretKey string) string {
 	return hex.EncodeToString(ciphertext)
 }
 
+// Decrypt шифровка данных в текстовый вид
 func Decrypt(ciphertext string, secretKey string) string {
 
 	temp, err := hex.DecodeString(ciphertext)
@@ -77,6 +79,7 @@ func SymmPassCreate(password string, secretKey string) string {
 	return string(key)
 }
 
+// EncryptBinary шифровка бинарных данных
 func EncryptBinary(binData []byte, secretKey string) []byte {
 	aes, err := aes.NewCipher([]byte(secretKey))
 	if err != nil {
@@ -101,6 +104,7 @@ func EncryptBinary(binData []byte, secretKey string) []byte {
 	return cipherBin
 }
 
+// DecryptBinary расшифровка бинарных данных
 func DecryptBinary(cipherBin []byte, secretKey string) []byte {
 
 	aes, err := aes.NewCipher([]byte(secretKey))

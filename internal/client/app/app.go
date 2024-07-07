@@ -13,6 +13,7 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
+// ClientRun запуск клиента
 func ClientRun() {
 
 	cfg, err := config.NewClientConfig()

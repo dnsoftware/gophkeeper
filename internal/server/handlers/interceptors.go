@@ -1,3 +1,4 @@
+// Серверные перехватчики
 package handlers
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/dnsoftware/gophkeeper/internal/utils"
 )
 
+// checkUserInterceptor проверка авторизованности пользователя
 func checkUserInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 	if info.FullMethod == constants.ExcludeMethodRegistration || info.FullMethod == constants.ExcludeMethodPing || info.FullMethod == constants.ExcludeMethodLogin {

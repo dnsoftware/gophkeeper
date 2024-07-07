@@ -1,3 +1,4 @@
+// Перехватчики исходящих и входящих grpc запросов (добавление токена авторизации, шифровка/дешифровка данных)
 package infrastructure
 
 import (
@@ -40,6 +41,7 @@ func NewAuthInterceptor(actualToken ActualTokenGet, excludeMethods map[string]bo
 	return a
 }
 
+// TokenInterceptor добавление токена авторизации в исходящий запрос
 func (i *AuthInterceptor) TokenInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption,
 	) error {
@@ -56,14 +58,16 @@ func (i *AuthInterceptor) TokenInterceptor() grpc.UnaryClientInterceptor {
 
 /******************************** Шифровка исходящих данных *******************************/
 
+// UserPasswordGet интерфейс получения пароля пользователя, чтобы использовать его как часть ключа шифрования
 type UserPasswordGet interface {
 	GetPassword() string
 }
 
+// DataOutInterceptor перехватчик исходящих данных
 type DataOutInterceptor struct {
-	userPassword UserPasswordGet
-	validMethods map[string]bool
-	secretKey    string
+	userPassword UserPasswordGet // для получения пароль пользователя
+	validMethods map[string]bool // методы, нуждающиеся в перехвате
+	secretKey    string          // секретный ключ, для шифрования
 }
 
 // NewDataOutInterceptor шифрование значимых полей в исходящих запросах
@@ -80,6 +84,7 @@ func NewDataOutInterceptor(userPassword UserPasswordGet, secretKey string, metho
 	return a
 }
 
+// DataOutputInterceptor перехватчик исходящих данных (шифровка/дешифровка)
 func (d *DataOutInterceptor) DataOutputInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption,
 	) error {

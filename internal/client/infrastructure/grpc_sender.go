@@ -1,3 +1,4 @@
+// Package infrastructure обмен данными с клиентом
 package infrastructure
 
 import (
@@ -20,12 +21,13 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
+// GRPCSender обмен данными с клиентом
 type GRPCSender struct {
 	pb.KeeperClient
-	token     string
-	password  string
-	SecretKey string
-	uploadDir string
+	token     string // токен авторизации
+	password  string // пароль
+	SecretKey string // секретный ключ
+	uploadDir string // директория для сохранения файлов
 }
 
 // NewGRPCSender обмен данными с сервером
@@ -91,6 +93,7 @@ func (t *GRPCSender) Registration(login string, password string, password2 strin
 	return res.Token, nil
 }
 
+// Login логин
 func (t *GRPCSender) Login(login string, password string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
@@ -114,6 +117,7 @@ func (t *GRPCSender) Login(login string, password string) (string, error) {
 	return lr.Token, nil
 }
 
+// EntityCodes получение справочника типов сущностей
 func (t *GRPCSender) EntityCodes() ([]*domain.EntityCode, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
@@ -138,6 +142,7 @@ func (t *GRPCSender) EntityCodes() ([]*domain.EntityCode, error) {
 	return entcodes, nil
 }
 
+// Fields получение описаний полей сущностей
 func (t *GRPCSender) Fields(etype string) ([]*domain.Field, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
@@ -165,6 +170,7 @@ func (t *GRPCSender) Fields(etype string) ([]*domain.Field, error) {
 	return fd, nil
 }
 
+// AddEntity добавление сущности
 func (t *GRPCSender) AddEntity(ae domain.Entity) (int32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
@@ -252,6 +258,7 @@ func (t *GRPCSender) SaveEntity(ae domain.Entity) (int32, error) {
 	return resp.Id, err
 }
 
+// UploadBinary загрузка незашифрованных бинарных данных (клиент -> сервер)
 func (t *GRPCSender) UploadBinary(entityId int32, file string) (int32, error) {
 
 	stream, err := t.KeeperClient.UploadBinary(context.Background())
@@ -339,6 +346,7 @@ func (t *GRPCSender) DownloadBinary(entityId int32, fileName string) (string, er
 
 /************************************ Шифрование бинарного потока ************************************/
 
+// UploadCryptoBinary получение зашифрованных бинарных данных с клиента (клиент -> сервер)
 func (t *GRPCSender) UploadCryptoBinary(entityId int32, file string) (int32, error) {
 	stream, err := t.KeeperClient.UploadCryptoBinary(context.Background())
 	if err != nil {
@@ -431,6 +439,7 @@ func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (stri
 	return uploadFile, nil
 }
 
+// Entity получение сущности
 func (t *GRPCSender) Entity(id int32) (*domain.Entity, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
@@ -472,14 +481,17 @@ func (t *GRPCSender) Entity(id int32) (*domain.Entity, error) {
 	return ent, nil
 }
 
+// GetToken получение токена авторизации
 func (t *GRPCSender) GetToken() string {
 	return t.token
 }
 
+// GetPassword получение пароля
 func (t *GRPCSender) GetPassword() string {
 	return t.password
 }
 
+// EntityList Получение списка сущностей указанного типа для конкретного пользователя
 func (t *GRPCSender) EntityList(etype string) (map[int32]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()
@@ -519,6 +531,7 @@ func (t *GRPCSender) EntityList(etype string) (map[int32]string, error) {
 	return list, nil
 }
 
+// DeleteEntity удаление сущности
 func (t *GRPCSender) DeleteEntity(id int32) error {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DBContextTimeout)
 	defer cancel()

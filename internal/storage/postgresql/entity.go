@@ -1,3 +1,4 @@
+// Основная работа с сущностями (CRUD)
 package postgresql
 
 import (
@@ -102,6 +103,7 @@ func (p *PgStorage) UpdateEntity(ctx context.Context, entity entity.EntityModel)
 
 }
 
+// GetEntity получить сущность
 func (p *PgStorage) GetEntity(ctx context.Context, id int32) (entity.EntityModel, error) {
 
 	empty := entity.EntityModel{}
@@ -186,6 +188,7 @@ func (p *PgStorage) GetBinaryFilenameByEntityID(ctx context.Context, entityID in
 	return filename, nil
 }
 
+// BinaryFileDataProperty Для десериализации данных по загруженным файлам
 type BinaryFileDataProperty struct {
 	Servername string `json:"servername"`
 	Clientname string `json:"clientname"`

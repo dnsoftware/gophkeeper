@@ -1,3 +1,5 @@
+// Package config формирует клиентскую конфигурацию путем объединения параметров,
+// полученных из командной строки и из конфигурационного файла /cmd/client/config.yaml
 package config
 
 import (
@@ -10,12 +12,14 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
+// ClientConfig конфигурация клиента
 type ClientConfig struct {
 	Env           string `yaml:"env"`           // окружение (local, dev, prod)
 	ServerAddress string `yaml:"serverAddress"` // адрес и порт сервера
 	SecretKey     string `yaml:"secretKey"`     // ключ шифрования передаваемых данных
 }
 
+// NewClientConfig создание конфигурационной структуры
 func NewClientConfig() (*ClientConfig, error) {
 	cfg := &ClientConfig{}
 	flagCfg := &ClientConfig{}

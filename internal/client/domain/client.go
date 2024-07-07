@@ -1,3 +1,4 @@
+// Работа в консоли, обмен данными с сервером
 package domain
 
 import (
@@ -11,38 +12,65 @@ import (
 
 // Readline Работа с командной строкой
 type Readline interface {
+	// input управляет вводом строки в консоли
 	input(prompt string, validateRules string, validateMessages string) (string, error)
+	// edit редактирование строки данных в консоли
 	edit(prompt string, what string, validateRules string, validateMessages string) (string, error)
+	// Writeln вывод в консоль с переводом строки
 	Writeln(str string)
+	// Registration регистрация
 	Registration() (string, string, error)
+	// Login логин
 	Login() (string, string, error)
 	Stderr() io.Writer
+	// Close завершение работы в консоли
 	Close() error
+	// MakeFieldsDescription Формирование карт описаний полей сущностей
 	MakeFieldsDescription(fields []*Field)
+	// GetEtypeName получение названия типа сущности по коду
 	GetEtypeName(etype string) string
+	// SetEtypeName установка названия типа сущности
 	SetEtypeName(etype string, name string)
+	// GetField получение описания поля сущности по ID поля
 	GetField(fieldID int32) *Field
+	// GetFieldsGroup получение группы полей сущности по коду типа сущности
 	GetFieldsGroup(etype string) []*Field
+	// interrupt прерывание ввода
 	interrupt(line string, err error) string
 }
 
 // Sender Интерфейс отправки/приема данных с сервера
 type Sender interface {
+	// Registration регистрация
 	Registration(login string, password string, password2 string) (string, error)
+	// Login логин
 	Login(login string, password string) (string, error)
+	// EntityCodes получение справочника типов сущностей
 	EntityCodes() ([]*EntityCode, error)
+	// Fields получение описаний полей сущностей
 	Fields(etype string) ([]*Field, error)
+	// AddEntity добавление сущности
 	AddEntity(ae Entity) (int32, error)
+	// SaveEntity сохранение сущности
 	SaveEntity(ae Entity) (int32, error)
+	// DeleteEntity удаление сущности
 	DeleteEntity(id int32) error
+	// UploadBinary загрузка незашифрованных бинарных данных (клиент -> сервер)
 	UploadBinary(entityId int32, file string) (int32, error)
+	// DownloadBinary отдача незашифрованных бинарных данных клиенту (сервер -> клиент)
 	DownloadBinary(entityId int32, fileName string) (string, error)
+	// UploadCryptoBinary получение зашифрованных бинарных данных с клиента (клиент -> сервер)
 	UploadCryptoBinary(entityId int32, file string) (int32, error)
+	// DownloadCryptoBinary отдача зашифрованных бинарных данных клиенту (сервер -> клиент)
 	DownloadCryptoBinary(entityId int32, fileName string) (string, error)
+	// EntityList Получение списка сущностей указанного типа для конкретного пользователя
+	// Простая карта с кодом сущности и названием(составляется из метаданных)
 	EntityList(etype string) (map[int32]string, error)
+	// Entity получение сущности
 	Entity(id int32) (*Entity, error)
 }
 
+// Entity сущность
 type Entity struct {
 	Id       int32       // ID сущности
 	UserID   int32       // ID пользователя
@@ -51,36 +79,40 @@ type Entity struct {
 	Metainfo []*Metainfo // массив значений метаинформации
 }
 
+// Property свойство сущности
 type Property struct {
 	EntityId int32  // код сущности
 	FieldId  int32  // код описания поля свйоства
 	Value    string // значение свойства
 }
 
+// Metainfo метаинформация сущности
 type Metainfo struct {
 	EntityId int32  // код сущности
 	Title    string // наименование метаинформации
 	Value    string // значение метаинформации
 }
 
+// EntityCode название типа сущности
 type EntityCode struct {
-	Etype string
-	Name  string
+	Etype string // код типа сущности
+	Name  string // название типа сущности
 }
 
+// Field описание поля сущности
 type Field struct {
-	Id               int32
-	Name             string
-	Etype            string
-	Ftype            string
-	ValidateRules    string
-	ValidateMessages string
+	Id               int32  // ID поля
+	Name             string // название поля
+	Etype            string // код типа сущности
+	Ftype            string // тип поля
+	ValidateRules    string // правила валидации при вводе поля
+	ValidateMessages string // сообщения валидации при ее непрохождении
 }
 
+// GophKeepClient клиент, управляет вводом данных в консоли и отправкой/получением данных с/на сервер
 type GophKeepClient struct {
-	//rl     *CLIReader
-	rl     Readline
-	Sender Sender
+	rl     Readline // работа в консоли
+	Sender Sender   // отправка-получение данных на/с сервера
 }
 
 // BinaryFileProperty Данные в поле свойства бинарной сущности содержат JSON в формате:
@@ -92,10 +124,11 @@ type BinaryFileProperty struct {
 }
 
 const (
-	WorkAgain string = "again"
-	WorkStop  string = "stop"
+	WorkAgain string = "again" // повторение цикла ввода в консоли сначала
+	WorkStop  string = "stop"  // завершение цикла ввода в консоли
 )
 
+// NewGophKeepClient конструктор
 func NewGophKeepClient(readline Readline, sender Sender) (*GophKeepClient, error) {
 
 	client := &GophKeepClient{
@@ -107,6 +140,7 @@ func NewGophKeepClient(readline Readline, sender Sender) (*GophKeepClient, error
 
 }
 
+// Start старт консольного клиента
 func (c *GophKeepClient) Start(stopChan chan bool) error {
 
 	var token string // токен авторизации
@@ -228,6 +262,7 @@ func (c *GophKeepClient) DisplayEntityBinary(ent Entity, filePath string) {
 	fmt.Println("------------------------")
 }
 
+// FilestorageDir получение директории для хранения файлов, полученных с сервера
 func FilestorageDir() (string, error) {
 	wd, _ := os.Getwd()
 	uploadDir := wd + "/" + constants.FileStorage

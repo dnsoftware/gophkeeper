@@ -1,3 +1,4 @@
+// Package handlers обмен данными с клиентом по gRPC протоколу
 package handlers
 
 import (
@@ -46,15 +47,18 @@ type EntityService interface {
 	// EntityList Список сущностей определенного типа для пользователя
 	EntityList(ctx context.Context, etype string, userID int32) (map[int32]string, error)
 
-	// UploadBinary потоковая загрузка бинарного файла
+	// UploadBinary потоковая загрузка незашифрованного бинарного файла
 	UploadBinary(stream pb.Keeper_UploadBinaryServer) (int32, error)
+	// DownloadBinary потоковая отдача незашифрованного бинарного файла
 	DownloadBinary(entityID int32, stream pb.Keeper_DownloadBinaryServer) error
 
-	// UploadCryptoBinary потоковая загрузка бинарного файла
+	// UploadCryptoBinary потоковая загрузка зашифрованного бинарного файла
 	UploadCryptoBinary(stream pb.Keeper_UploadCryptoBinaryServer) (int32, error)
+	// DownloadCryptoBinary потоковая отдача зашифрованного бинарного файла
 	DownloadCryptoBinary(entityID int32, stream pb.Keeper_DownloadCryptoBinaryServer) error
 }
 
+// Services сервисы
 type Services struct {
 	UserService       UserService       // работа с регистрацией и аутентификацией/авторизацией
 	EntityCodeService EntityCodeService // работа с данными пользователя (сохранение, получение, изменение)
@@ -62,6 +66,7 @@ type Services struct {
 	EntityService     EntityService     // работа с сущностью
 }
 
+// GRPCServer gRPC сервер
 type GRPCServer struct {
 	// нужно встраивать тип pb.Unimplemented<TypeName>
 	// для совместимости с будущими версиями
@@ -69,7 +74,7 @@ type GRPCServer struct {
 
 	svs Services // набор сервисов для работы с бизнес логикой
 
-	Server *grpc.Server
+	Server *grpc.Server // пакет обеспечивающий работу gRPC сервера
 }
 
 func NewGRPCServer(services Services, certificateKeyPath string, privateKeyPath string) (*grpc.Server, error) {
@@ -99,6 +104,7 @@ func NewGRPCServer(services Services, certificateKeyPath string, privateKeyPath 
 	return server.Server, nil
 }
 
+// Ping проверка связи
 func (g *GRPCServer) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingResponse, error) {
 
 	if in.Message == "ping" {

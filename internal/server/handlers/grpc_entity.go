@@ -12,6 +12,7 @@ import (
 	"github.com/dnsoftware/gophkeeper/logger"
 )
 
+// AddEntity добавление сущности
 func (g *GRPCServer) AddEntity(ctx context.Context, in *pb.AddEntityRequest) (*pb.AddEntityResponse, error) {
 
 	userID := getContextUserID(ctx)
@@ -52,6 +53,7 @@ func (g *GRPCServer) AddEntity(ctx context.Context, in *pb.AddEntityRequest) (*p
 	}, nil
 }
 
+// SaveEditEntity сохранение отредактированных данных сущности
 func (g *GRPCServer) SaveEditEntity(ctx context.Context, in *pb.SaveEntityRequest) (*pb.SaveEntityResponse, error) {
 
 	userID := getContextUserID(ctx)
@@ -93,6 +95,7 @@ func (g *GRPCServer) SaveEditEntity(ctx context.Context, in *pb.SaveEntityReques
 	}, nil
 }
 
+// Entity получение сущности
 func (g *GRPCServer) Entity(ctx context.Context, in *pb.EntityRequest) (*pb.EntityResponse, error) {
 
 	ent, err := g.svs.EntityService.Entity(ctx, in.Id)
@@ -128,6 +131,7 @@ func (g *GRPCServer) Entity(ctx context.Context, in *pb.EntityRequest) (*pb.Enti
 	return ret, err
 }
 
+// DeleteEntity удаление сущности
 func (g *GRPCServer) DeleteEntity(ctx context.Context, in *pb.DeleteEntityRequest) (*pb.DeleteEntityResponse, error) {
 
 	userID := getContextUserID(ctx)
@@ -140,6 +144,7 @@ func (g *GRPCServer) DeleteEntity(ctx context.Context, in *pb.DeleteEntityReques
 	return &pb.DeleteEntityResponse{Error: ""}, nil
 }
 
+// UploadBinary загрузка незашифрованных бинарных данных (клиент -> сервер)
 func (g *GRPCServer) UploadBinary(stream pb.Keeper_UploadBinaryServer) error {
 
 	size, err := g.svs.EntityService.UploadBinary(stream)
@@ -152,6 +157,7 @@ func (g *GRPCServer) UploadBinary(stream pb.Keeper_UploadBinaryServer) error {
 	return nil
 }
 
+// DownloadBinary отдача незашифрованных бинарных данных клиенту (сервер -> клиент)
 func (g *GRPCServer) DownloadBinary(in *pb.DownloadBinRequest, stream pb.Keeper_DownloadBinaryServer) error {
 
 	err := g.svs.EntityService.DownloadBinary(in.EntityId, stream)
@@ -162,6 +168,7 @@ func (g *GRPCServer) DownloadBinary(in *pb.DownloadBinRequest, stream pb.Keeper_
 	return nil
 }
 
+// UploadCryptoBinary получение зашифрованных бинарных данных с клиента (клиент -> сервер)
 func (g *GRPCServer) UploadCryptoBinary(stream pb.Keeper_UploadCryptoBinaryServer) error {
 
 	size, err := g.svs.EntityService.UploadCryptoBinary(stream)
@@ -174,6 +181,7 @@ func (g *GRPCServer) UploadCryptoBinary(stream pb.Keeper_UploadCryptoBinaryServe
 	return nil
 }
 
+// DownloadCryptoBinary отдача зашифрованных бинарных данных клиенту (сервер -> клиент)
 func (g *GRPCServer) DownloadCryptoBinary(in *pb.DownloadBinRequest, stream pb.Keeper_DownloadCryptoBinaryServer) error {
 
 	err := g.svs.EntityService.DownloadCryptoBinary(in.EntityId, stream)
@@ -199,6 +207,7 @@ func (g *GRPCServer) EntityList(ctx context.Context, in *pb.EntityListRequest) (
 	}, nil
 }
 
+// getContextUserID получение кода порльзователя из переданного контекста
 func getContextUserID(ctx context.Context) int {
 	var token string
 	var userID int

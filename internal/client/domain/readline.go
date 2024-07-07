@@ -10,29 +10,28 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// CLIReader консольный клиент
 type CLIReader struct {
-	*readline.Instance
-	validator   *validator.Validate
-	passwordCfg *readline.Config
-	etypes      map[string]string   // справочник типов сущностей (код_сущности: наименование)
-	fieldsByID  map[int32]*Field    // карта описаний полей сущности с ключом по ID поля из таблицы fields
-	fieldsGroup map[string][]*Field // карта описаний полей сущности,сгруппированных по типу сущности (card, logopas, text, binary и т.д.)
+	*readline.Instance                     // библиотечный функционал
+	validator          *validator.Validate // валидатор введенных данных
+	passwordCfg        *readline.Config    // конфигурация поля для ввода пароля
+	etypes             map[string]string   // справочник типов сущностей (код_сущности: наименование)
+	fieldsByID         map[int32]*Field    // карта описаний полей сущности с ключом по ID поля из таблицы fields
+	fieldsGroup        map[string][]*Field // карта описаний полей сущности,сгруппированных по типу сущности (card, logopas, text, binary и т.д.)
 }
 
 const (
-	loopBreak    string = "break"
-	loopContinue string = "continue"
-	loopNone     string = "none" // текущий цикл будет продолжен в штатном режиме
+	loopBreak    string = "break"    // прервать текущий цикл ввода
+	loopContinue string = "continue" // продолжить текущий цикл ввода
+	loopNone     string = "none"     // текущий цикл будет продолжен в штатном режиме
 )
 
-//type validateMessages map[string]string `json:""`
-
+// NewCLIReadline конструктор
 func NewCLIReadline(cfg *readline.Config) (*CLIReader, error) {
 	rl, err := readline.NewEx(cfg)
 	if err != nil {
 		return nil, err
 	}
-	//rl.CaptureExitSignal()
 
 	passwordCfg := rl.GenPasswordConfig()
 	passwordCfg.SetListener(func(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool) {
@@ -117,7 +116,7 @@ func (r *CLIReader) Registration() (string, string, error) {
 	return login, string(pswd), nil
 }
 
-// login Ввод логина для аутентификации
+// Login Ввод логина для аутентификации
 func (r *CLIReader) Login() (string, string, error) {
 	defer r.SetPrompt("")
 
@@ -174,14 +173,18 @@ func (r *CLIReader) Login() (string, string, error) {
 func (r *CLIReader) GetEtypeName(etype string) string {
 	return r.etypes[etype]
 }
+
+// SetEtypeName установка названия типа сущности
 func (r *CLIReader) SetEtypeName(etype string, name string) {
 	r.etypes[etype] = name
 }
 
+// GetField получение описания поля сущности по ID поля
 func (r *CLIReader) GetField(fieldID int32) *Field {
 	return r.fieldsByID[fieldID]
 }
 
+// GetFieldsGroup получение группы полей сущности по коду типа сущности
 func (r *CLIReader) GetFieldsGroup(etype string) []*Field {
 	return r.fieldsGroup[etype]
 }
@@ -240,7 +243,7 @@ func (r *CLIReader) input(prompt string, validateRules string, validateMessages 
 	return value, nil
 }
 
-// Редактирование
+// Редактирование данных в консольной строке
 func (r *CLIReader) edit(prompt string, what string, validateRules string, validateMessages string) (string, error) {
 	var value string
 	var err error
@@ -310,6 +313,7 @@ func (r *CLIReader) interrupt(line string, err error) string {
 	return loopNone
 }
 
+// Close завершение сеанса консольного ввода
 func (r *CLIReader) Close() error {
 	return r.Instance.Close()
 }
@@ -317,44 +321,3 @@ func (r *CLIReader) Close() error {
 func (r *CLIReader) Stderr() io.Writer {
 	return r.Instance.Stderr()
 }
-
-//var Completer = readline.NewPrefixCompleter(
-//	readline.PcItem("mode",
-//		readline.PcItem("vi"),
-//		readline.PcItem("emacs"),
-//	),
-//	readline.PcItem("login"),
-//	readline.PcItem("say",
-//		readline.PcItemDynamic(ListFiles("./"),
-//			readline.PcItem("with",
-//				readline.PcItem("following"),
-//				readline.PcItem("items"),
-//			),
-//		),
-//		readline.PcItem("hello"),
-//		readline.PcItem("bye"),
-//	),
-//	readline.PcItem("setprompt"),
-//	readline.PcItem("setpassword"),
-//	readline.PcItem("bye"),
-//	readline.PcItem("help"),
-//	readline.PcItem("go",
-//		readline.PcItem("build", readline.PcItem("-o"), readline.PcItem("-v")),
-//		readline.PcItem("install",
-//			readline.PcItem("-v"),
-//			readline.PcItem("-vv"),
-//			readline.PcItem("-vvv"),
-//		),
-//		readline.PcItem("test"),
-//	),
-//	readline.PcItem("sleep"),
-//)
-
-//func FilterInput(r rune) (rune, bool) {
-//	switch r {
-//	// block CtrlZ feature
-//	case readline.CharCtrlZ:
-//		return r, false
-//	}
-//	return r, true
-//}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// GetEntityCodes получение кодов доступных сущностей
 func (p *PgStorage) GetEntityCodes(ctx context.Context) (map[string]string, error) {
 
 	query := `SELECT * FROM entity_codes ORDER BY etype`

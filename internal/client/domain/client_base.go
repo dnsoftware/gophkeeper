@@ -1,3 +1,4 @@
+// Базовай функционал работы в консоли (получени, добавление, редактирование, удаление сущностей)
 package domain
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/dnsoftware/gophkeeper/internal/constants"
 )
 
+// Base базовай функционал работы в консоли (получени, добавление, редактирование, удаление сущностей)
 func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 
 	if len(entCodes) == 0 {
@@ -311,6 +313,7 @@ func (c *GophKeepClient) Base(entCodes []*EntityCode) (string, error) {
 	return WorkAgain, nil
 }
 
+// createMetainfo ввод метаинформации
 func (c *GophKeepClient) createMetainfo(metas []*Metainfo) []*Metainfo {
 	for {
 		metaName, err := c.rl.input("Название поля метаданных:", "required", `{"required": "Укажите название поля метаданных"}`)

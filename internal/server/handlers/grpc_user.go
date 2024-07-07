@@ -7,6 +7,7 @@ import (
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 )
 
+// Registration регистрация нового пользователя
 func (g *GRPCServer) Registration(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, constants.DBContextTimeout)
@@ -27,6 +28,7 @@ func (g *GRPCServer) Registration(ctx context.Context, in *pb.RegisterRequest) (
 
 }
 
+// Login вход пользователя
 func (g *GRPCServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, constants.DBContextTimeout)
 	defer cancel()

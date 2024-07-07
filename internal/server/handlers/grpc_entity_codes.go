@@ -7,6 +7,7 @@ import (
 	pb "github.com/dnsoftware/gophkeeper/internal/proto"
 )
 
+// EntityCodes получение справочника кодов сущностей
 func (g *GRPCServer) EntityCodes(ctx context.Context, _ *pb.EntityCodesRequest) (*pb.EntityCodesResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, constants.DBContextTimeout)
 	defer cancel()

@@ -7,19 +7,18 @@ import (
 )
 
 const (
-	LogFile       string = "log.log"
-	LogLevel             = zapcore.InfoLevel
-	LogReadline   string = "readline.log"
-	PW_SALT_BYTES        = 16            // длина "соли" для пароля
-	PW_HASH_BYTES        = 24            // длина хеша пароля
-	JWTTokenExp          = time.Hour * 1 // время истечения токена авторизации
-	JWTSecretKey         = "jwtstrong"   // секретный ключ для подписи токена авторизации
-	TokenKey      string = "token"       // ключ JWT токена к передаваемах метаданных (контексте)
-	FileBankDir   string = "filebank"    // папка в которой хранятся файлы пользователей на сервере
-	ChunkSize     int    = 10240         // chunk size для потоковой передачи бинарных данных
-	FileStorage   string = "filestorage" // папка куда скачиваются файлы пользователя на клиенте
-	UserUD        string = "userID"      // идентификатор кода пользователя в GRPC контексте сервера
-	CharCtrlC     rune   = 3             // Код нажатия Ctrl+C
+	LogFile       string = "log.log"         // файл логов
+	LogLevel             = zapcore.InfoLevel // уровень логирования
+	PW_SALT_BYTES        = 16                // длина "соли" для пароля
+	PW_HASH_BYTES        = 24                // длина хеша пароля
+	JWTTokenExp          = time.Hour * 1     // время истечения токена авторизации
+	JWTSecretKey         = "jwtstrong"       // секретный ключ для подписи токена авторизации
+	TokenKey      string = "token"           // ключ JWT токена к передаваемах метаданных (контексте)
+	FileBankDir   string = "filebank"        // папка в которой хранятся файлы пользователей на сервере
+	ChunkSize     int    = 10240             // chunk size для потоковой передачи бинарных данных
+	FileStorage   string = "filestorage"     // папка куда скачиваются файлы пользователя на клиенте
+	UserUD        string = "userID"          // идентификатор кода пользователя в GRPC контексте сервера
+	CharCtrlC     rune   = 3                 // Код нажатия Ctrl+C
 )
 
 // типы сущностей
@@ -49,6 +48,7 @@ const (
 	MethodEntity string = "Entity"
 )
 
+// окружение
 const (
 	envLocal = "local"
 	envDev   = "dev"
@@ -56,7 +56,7 @@ const (
 )
 
 const (
-	DBContextTimeout time.Duration = time.Duration(5) * time.Second // длительность запроса в контексте работы с БД
+	DBContextTimeout time.Duration = time.Duration(10) * time.Second // длительность запроса в контексте работы с БД
 )
 
 // сообщения об ошибках
