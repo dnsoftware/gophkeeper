@@ -200,7 +200,7 @@ func (c *GophKeepClient) Start(stopChan chan bool) error {
 
 	<-stopChan
 
-	fmt.Println("Программа завершена!")
+	fmt.Println("\nПрограмма завершена!")
 	return nil
 }
 
