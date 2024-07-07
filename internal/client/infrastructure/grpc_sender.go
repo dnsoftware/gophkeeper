@@ -302,14 +302,6 @@ func (t *GRPCSender) DownloadBinary(entityId int32, fileName string) (string, er
 		return "", err
 	}
 
-	//wd, _ := os.Getwd()
-	//parts := strings.Split(wd, "internal")
-	//uploadDir := parts[0] + "cmd/client/" + constants.FileStorage
-	//err = os.MkdirAll(uploadDir, os.ModePerm)
-	//if err != nil {
-	//	return "", err
-	//}
-
 	uploadFile := t.uploadDir + "/" + fmt.Sprintf("%v_", time.Now().Unix()) + fileName
 	f, err := os.OpenFile(uploadFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
