@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -403,16 +402,7 @@ func (t *GRPCSender) DownloadCryptoBinary(entityId int32, fileName string) (stri
 		return "", err
 	}
 
-	wd, _ := os.Getwd()
-	parts := strings.Split(wd, "internal")
-	uploadDir := parts[0] + "/" + constants.FileStorage
-	uploadDir = strings.Replace(uploadDir, "//", "/", -1)
-	err = os.MkdirAll(uploadDir, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
-	uploadFile := uploadDir + "/" + fmt.Sprintf("%v_", time.Now().Unix()) + fileName
+	uploadFile := t.uploadDir + "/" + fmt.Sprintf("%v_", time.Now().Unix()) + fileName
 	f, err := os.OpenFile(uploadFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return "", err
